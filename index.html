@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shehjaar Medicate | Advanced Management</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+<div id="splashLoader" class="splash-loader" style="display: none;">
+  <div class="spinner"></div>
+  <h2 style="color: white; margin-top: 20px; font-weight: 600;">Syncing Secure Data...</h2>
+</div>
+
+<div id="loginOverlay" class="login-overlay">
+  <div class="login-card">
+    <div style="background: var(--header-grad); margin: -30px -30px 20px -30px; padding: 20px; text-align: center;">
+      <img src="logo.jpeg" alt="Logo" class="login-logo">
+    </div>
+    <h2>Shehjaar Medicate</h2>
+    <p>Access Password Required</p>
+    <div class="input-group" style="margin-bottom: 15px; text-align: left;">
+      <label for="loginPassword">Password</label>
+      <div class="input-wrapper">
+        <i class="fas fa-lock" style="color: var(--primary);"></i>
+        <input type="password" id="loginPassword" placeholder="Enter Password" onkeydown="if(event.key==='Enter') checkLogin()">
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="checkLogin()" style="width: 100%;">Login</button>
+    <p id="loginError" style="color: #e74c3c; font-size: 13px; margin-top: 10px; display: none;">❌ Incorrect Password</p>
+  </div>
+</div>
+
+<div id="settingsModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div style="background: var(--header-grad); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin: 0; color: white; font-size: 16px;">⚙️ System Settings</h3>
+      <span class="close" onclick="toggleSettings()" style="color: rgba(255,255,255,0.8); font-size: 22px;">&times;</span>
+    </div>
+    <div class="modal-body">
+      <div class="input-group" style="margin-bottom: 15px;">
+        <label for="defaultFee">Default Doctor Fee (₹)</label>
+        <div class="input-wrapper">
+          <i class="fas fa-rupee-sign" style="color: var(--primary);"></i>
+          <input type="number" id="defaultFee" placeholder="300">
+        </div>
+      </div>
+      <div class="input-group" style="margin-bottom: 15px;">
+        <label for="validityDays">Validity Duration (Days)</label>
+        <div class="input-wrapper">
+          <i class="far fa-calendar-alt" style="color: var(--primary);"></i>
+          <input type="number" id="validityDays" placeholder="15">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveSettings()" style="width: 100%;">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<div id="mainApp" style="display: none;">
+  <header>
+    <div class="logo-section">
+      <img src="logo.jpeg" alt="Shehjaar Medicate Logo" id="appLogo">
+      <div>
+        <h1>Shehjaar Medicate</h1>
+        <p>Healthcare Management System</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div id="connectionStatus">
+        <span class="dot">●</span> Connecting...
+      </div>
+      <div class="settings-btn" onclick="toggleSettings()" title="System Settings">
+        <i class="fas fa-cog"></i>
+      </div>
+    </div>
+  </header>
+
+  <div class="app-container">
+  <div style="position: relative;">
+    <div class="stats-grid" id="statsGrid">
+      <!-- Card 1 -->
+      <div class="stat-card">
+        <div class="stat-icon-box" style="background: #ccfbf1; color: #0d9488;">
+          <i class="fas fa-user-friends"></i>
+        </div>
+        <div class="stat-content">
+          <span class="label">TOTAL PATIENTS</span>
+          <span class="value" id="statPatients" style="color: #0d9488;">0</span>
+          <span class="subtitle">Registered Patients</span>
+        </div>
+      </div>
+      <!-- Card 2 -->
+      <div class="stat-card">
+        <div class="stat-icon-box" style="background: #dbeafe; color: #2563eb;">
+          <i class="fas fa-calendar-alt"></i>
+        </div>
+        <div class="stat-content">
+          <span class="label">TOTAL SESSIONS</span>
+          <span class="value" id="statSessions" style="color: #2563eb;">0</span>
+          <span class="subtitle">Completed Sessions</span>
+        </div>
+      </div>
+      <!-- Card 3 -->
+      <div class="stat-card">
+        <div class="stat-icon-box" style="background: #ffedd5; color: #ea580c;">
+          <i class="fas fa-exclamation-circle"></i>
+        </div>
+        <div class="stat-content">
+          <span class="label">PENDING BALANCE</span>
+          <span class="value" id="statPending" style="color: #ea580c;">₹ 0</span>
+          <span class="subtitle">Outstanding Amount</span>
+        </div>
+      </div>
+      <!-- Card 4 -->
+      <div class="stat-card">
+        <div class="stat-icon-box" style="background: #dcfce7; color: #16a34a;">
+          <i class="fas fa-rupee-sign"></i>
+        </div>
+        <div class="stat-content">
+          <span class="label">TOTAL COLLECTION</span>
+          <span class="value" id="statCollection" style="color: #16a34a;">₹ 0</span>
+          <span class="subtitle">Total Received</span>
+        </div>
+      </div>
+      <!-- Card 5 -->
+      <div class="stat-card">
+        <div class="stat-icon-box" style="background: #f3e8ff; color: #9333ea;">
+          <i class="fas fa-chart-line"></i>
+        </div>
+        <div class="stat-content">
+          <span class="label">TOTAL ADVANCE</span>
+          <span class="value" id="statAdvance" style="color: #9333ea;">₹ 0</span>
+          <span class="subtitle">Advance Payments</span>
+        </div>
+      </div>
+    </div>
+    <!-- Secret Toggle Button -->
+    <button class="stats-toggle-btn" id="statsToggleBtn" onclick="toggleStatsGrid()" title="Show/Hide Stats">
+      <i class="fas fa-eye" id="statsToggleIcon"></i>
+    </button>
+  </div>
+
+  <section class="card">
+    <div class="card-header">
+      <div class="header-title-box">
+        <div class="header-icon" style="background: #e0f2fe; color: #0284c7;">
+          <i class="fas fa-user-plus"></i>
+        </div>
+        <div>
+          <h2>Patient Entry</h2>
+          <p class="subtitle">Add new patient details to the system</p>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="clearForm()">
+        <i class="fas fa-sync-alt"></i> Refresh
+      </button>
+    </div>
+    
+    <div id="balanceAlert" class="alert alert-danger" style="display: none;">
+      <p style="margin: 0; font-weight: 600; font-size: 14px;">⚠️ Warning: Previous Balance Pending: ₹ <span id="pendingValue">0</span></p>
+    </div>
+    <div id="advanceAlert" class="alert alert-info" style="display: none;">
+      <p style="margin: 0; font-weight: 600; font-size: 14px;">ℹ️ Advance Payment Available: ₹ <span id="advanceValue">0</span></p>
+    </div>
+    <div id="smartHint" style="font-size: 13px; font-weight: 500; margin-bottom: 15px; display: none; color: var(--primary);"></div>
+
+    <form id="patientForm" onsubmit="event.preventDefault(); addPatient();">
+      
+      <div class="form-grid">
+        <div class="input-group">
+          <label for="searchPatientId">Patient ID <span style="font-size:11px;color:#64748b;font-weight:400;">(Search existing)</span></label>
+          <div class="input-wrapper">
+            <i class="fas fa-search"></i>
+            <input type="number" id="searchPatientId" placeholder="e.g. 1, 2, 3..." oninput="handleIdInput()" min="1">
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="displayCheckupId">Checkup ID <span style="font-size:11px;color:#64748b;font-weight:400;">(Auto)</span></label>
+          <div class="input-wrapper">
+            <input type="text" id="displayCheckupId" readonly style="background: #e0f2fe !important; font-weight: bold; color: var(--primary-dark);" placeholder="Auto">
+          </div>
+        </div>
+        <input type="hidden" id="activePatientId" value="">
+        <input type="hidden" id="activeCheckupId" value="">
+        <div class="input-group">
+          <label for="name">Patient Name</label>
+          <div class="input-wrapper">
+            <i class="fas fa-user" style="color: #10b981;"></i>
+            <input type="text" id="name" placeholder="Search or type name..." required list="patientSuggestions" oninput="handleNameInput()">
+          </div>
+          <datalist id="patientSuggestions"></datalist>
+        </div>
+        <div class="input-group">
+          <label for="phone">Phone Number</label>
+          <div class="input-wrapper">
+            <i class="fas fa-phone-alt" style="color: #8b5cf6;"></i>
+            <input type="tel" id="phone" placeholder="+91..." required>
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="address">Address</label>
+          <div class="input-wrapper">
+            <i class="fas fa-map-marker-alt" style="color: #ef4444;"></i>
+            <input type="text" id="address" placeholder="Location">
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="visit">Visit Type</label>
+          <div class="input-wrapper">
+            <i class="fas fa-clipboard-list" style="color: #d946ef;"></i>
+            <input type="text" id="visit" readonly style="background: #f8fafc; font-weight: bold;">
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="validUpto">Valid Upto Date</label>
+          <div class="input-wrapper">
+            <i class="far fa-calendar-alt" style="color: #f59e0b;"></i>
+            <input type="text" id="validUpto" readonly style="background: #fffbeb !important; font-weight: bold; color: #d97706;">
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="prevBal">Prev. Balance (₹)</label>
+          <div class="input-wrapper">
+            <i class="fas fa-rupee-sign" style="color: #8b5cf6;"></i>
+            <input type="number" id="prevBal" placeholder="0" readonly style="background: #f1f5f9; font-weight: bold;">
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="fee">Doctor Fee (₹)</label>
+          <div class="input-wrapper">
+            <i class="fas fa-user-md" style="color: #3b82f6;"></i>
+            <input type="number" id="fee" placeholder="0" readonly style="background: #f8fafc;">
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="paid">Paid Amount (₹)</label>
+          <div class="input-wrapper">
+            <i class="fas fa-money-bill-wave" style="color: #10b981;"></i>
+            <input type="number" id="paid" placeholder="0" oninput="calculateBalance()">
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="balance">Final Balance (₹)</label>
+          <div class="input-wrapper">
+            <i class="fas fa-credit-card" style="color: #0ea5e9;"></i>
+            <input type="number" id="balance" placeholder="0" readonly style="background: #f0fdfa !important; font-weight: bold; color: #0f766e;">
+          </div>
+        </div>
+        <div class="input-group" style="justify-content: flex-end;">
+          <button type="submit" class="btn btn-primary" id="submitBtn">
+            <span id="btnText">Save Entry</span>
+            <div class="loader" id="btnLoader"></div>
+          </button>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <section class="card">
+    <div class="card-header">
+      <div class="header-title-box">
+        <div class="header-icon" style="background: #e0f2fe; color: #0284c7;">
+          <i class="fas fa-users"></i>
+        </div>
+        <div>
+          <h2>Recent Sessions</h2>
+          <p class="subtitle">History of previous visits</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="filter-bar" style="background: #f8fafc; padding: 15px; border-radius: var(--input-radius); margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; border: 1px solid #e2e8f0;">
+      <div class="input-group" style="margin: 0; flex: 1; min-width: 80px;">
+        <label for="filterPatId" style="font-size: 11px;">Patient ID</label>
+        <div class="input-wrapper">
+          <i class="fas fa-search" style="color: var(--primary);"></i>
+          <input type="number" id="filterPatId" placeholder="ID...">
+        </div>
+      </div>
+      <div class="input-group" style="margin: 0; flex: 1; min-width: 80px;">
+        <label for="filterChkId" style="font-size: 11px;">Checkup ID</label>
+        <div class="input-wrapper">
+          <i class="fas fa-search" style="color: var(--primary);"></i>
+          <input type="number" id="filterChkId" placeholder="Chk ID...">
+        </div>
+      </div>
+      <div class="input-group" style="margin: 0; flex: 1; min-width: 110px;">
+        <label for="filterDate" style="font-size: 11px;">Date</label>
+        <div class="input-wrapper">
+          <i class="far fa-calendar-alt" style="color: var(--primary);"></i>
+          <input type="date" id="filterDate">
+        </div>
+      </div>
+      <div class="input-group" style="margin: 0; flex: 1; min-width: 110px;">
+        <label for="filterName" style="font-size: 11px;">Name</label>
+        <div class="input-wrapper">
+          <i class="fas fa-user" style="color: var(--primary);"></i>
+          <input type="text" id="filterName" placeholder="Name...">
+        </div>
+      </div>
+      <div class="input-group" style="margin: 0; flex: 1; min-width: 110px;">
+        <label for="filterPhone" style="font-size: 11px;">Mobile No.</label>
+        <div class="input-wrapper">
+          <i class="fas fa-phone-alt" style="color: var(--primary);"></i>
+          <input type="tel" id="filterPhone" placeholder="Phone...">
+        </div>
+      </div>
+      <div style="display: flex; gap: 5px;">
+        <button class="btn btn-primary" onclick="applyFilters()"><i class="fas fa-filter"></i> Apply</button>
+        <button class="btn" onclick="resetFilters()" style="background: #e2e8f0; color: #475569;"><i class="fas fa-undo"></i> Reset</button>
+      </div>
+    </div>
+    
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Pat. ID</th>
+            <th>Chk. ID</th>
+            <th>Date</th>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Address</th>
+            <th>Visit</th>
+            <th>Fee</th>
+            <th>Paid</th>
+            <th>Balance</th>
+            <th>Validity Upto</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="patientTableBody">
+          </tbody>
+      </table>
+    </div>
+  </section>
+  </div>
+</div>  
+
+<script src="script.js"></script>
+</body>
+</html>
