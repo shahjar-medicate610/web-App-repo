@@ -17,7 +17,68 @@
   --glass: rgba(255, 255, 255, 0.8);
 }
 
+/* Smart Input Alignment UX */
+.smart-align {
+  text-align: left !important;
+  transition: text-align 0.2s ease-in-out;
+}
+.smart-align.right-aligned {
+  text-align: right !important;
+}
+/* Tabs Navigation */
+.tabs-nav {
+  display: flex;
+  gap: 10px;
+  background: transparent;
+  padding: 0;
+  border-bottom: none;
+}
+.tab-btn {
+  background: transparent;
+  border: none;
+  padding: 10px 20px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.tab-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px 8px 0 0;
+}
+.tab-btn.active {
+  color: #ffffff;
+  border-bottom-color: #ffffff;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px 8px 0 0;
+}
+.tab-content {
+  display: none;
+}
+.tab-content.active {
+  display: block;
+}
+
 /* Thin Scrollbar */
+
+/* Remove number input spinner arrows globally */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
@@ -136,7 +197,7 @@ body {
 .app-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 105px 15px 20px 15px;
+  padding: 100px 15px 20px 15px; /* Adjusted top padding to optimize space */
 }
 
 header {
@@ -317,7 +378,7 @@ header::before {
 
 .stat-card {
   background: var(--card-bg);
-  padding: 10px 14px;
+  padding: 6px 10px;
   border-radius: var(--border-radius);
   box-shadow: var(--shadow);
   display: flex;
@@ -333,13 +394,13 @@ header::before {
 }
 
 .stat-icon-box {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 14px;
   flex-shrink: 0;
 }
 
@@ -357,15 +418,16 @@ header::before {
 }
 
 .stat-content .value {
-  font-size: 20px;
-  font-weight: 700;
-  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  margin: -2px 0 0 0;
 }
 
 .stat-content .subtitle {
-  font-size: 11px;
+  font-size: 9px;
   color: #94a3b8;
-  font-weight: 500;
+  font-weight: 600;
+  margin-top: -1px;
 }
 
 .card {
@@ -397,11 +459,43 @@ header::before {
   color: #2b6cb0;
 }
 
+.alert-observation {
+  background: #faf5ff;
+  border-color: #7c3aed;
+  color: #5b21b6;
+  border-left: 4px solid #7c3aed;
+}
+
 /* Readonly inputs styling */
 input[readonly] {
   background: #f1f5f9 !important;
   color: #475569;
   cursor: not-allowed;
+}
+
+/* Patient Type Badge (New / Existing) — inline with label */
+.patient-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.badge-new {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.badge-old {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
 }
 
 .card h2 {
@@ -499,19 +593,40 @@ input[readonly] {
 input,
 select {
   width: 100%;
-  padding: 10px 12px 10px 36px;
-  border: 2px solid #edf2f7;
-  border-radius: var(--input-radius);
-  font-size: 14px;
+  padding: 6px 10px 6px 30px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 12px;
   font-family: inherit;
   outline: none;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.payment-row {
+  background-color: #fef9c3 !important;
+}
+
+.payment-row td {
+  background-color: #fef9c3 !important;
 }
 
 input:focus,
 select:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+}
+
+.save-entry-btn {
+  flex: none;
+  width: 140px;
+}
+
+@media (max-width: 768px) {
+  .save-entry-btn {
+    flex: 1;
+    width: 100%;
+    min-width: 100%;
+  }
 }
 
 .btn {
@@ -563,6 +678,9 @@ th {
   padding: 10px 12px;
   font-size: 11px;
   font-weight: 700;
+  position: sticky;
+  top: 0;
+  z-index: 10;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: none;
@@ -578,8 +696,12 @@ tr:last-child td {
   border-bottom: none;
 }
 
-tr:hover {
-  background: #f0fdf9;
+table tbody tr:hover {
+  background-color: #f1f5f9;
+}
+
+.settlement-row {
+  background-color: #fef9c3 !important; /* Light yellow to highlight settlement entries */
 }
 
 .status-badge {
@@ -606,6 +728,24 @@ tr:hover {
   background: #ebf8ff;
   color: #2b6cb0;
   border: 1px solid #bee3f8;
+}
+
+.status-refunded {
+  background: #faf5ff;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+}
+
+.status-observation {
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+
+.status-left-clinic {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
 }
 
 tbody tr {
@@ -818,5 +958,169 @@ tbody tr {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* ==========================================================================
+   Mobile Responsiveness
+   ========================================================================== */
+@media (max-width: 850px) {
+  /* Header Adjustments */
+  header {
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 10px;
+    gap: 10px;
+  }
+  
+  .logo-section h1 {
+    font-size: 18px;
+  }
+  
+  .logo-section img {
+    width: 40px;
+    height: 40px;
+  }
+
+  .tabs-nav {
+    display: flex;
+    overflow-x: auto;
+    white-space: nowrap;
+    width: 100%;
+    padding-bottom: 5px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+  }
+  
+  .tabs-nav::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+  }
+
+  .header-actions {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+  }
+
+  /* Adjust body padding for taller wrapped header */
+  .app-container {
+    padding-top: 140px !important; 
+  }
+
+  /* Tally Layout Adjustments */
+  .tally-left {
+    min-width: 100% !important;
+    flex-basis: 100% !important;
+    order: 2; /* Move below receipt on mobile */
+  }
+  
+  .tally-right {
+    min-width: 100% !important;
+    flex-basis: 100% !important;
+    position: static !important;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    order: 1; /* Move to top on mobile */
+  }
+
+  /* Ensure table scrolls horizontally without breaking layout */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  table th, table td {
+    white-space: nowrap; /* Prevent text wrapping in table headers/cells on mobile */
+  }
+  
+  /* Filter inputs stack nicer */
+  .input-group {
+    flex: 1 1 45% !important;
+  }
+}
+
+/* ==========================================================================
+   Print Styles
+   ========================================================================== */
+.print-area {
+  display: none;
+}
+
+@media print {
+  /* Hide everything on the page normally */
+  body.printing-custom > :not(#printArea) {
+    display: none !important;
+  }
+  
+  /* Show only the print area */
+  body.printing-custom #printArea {
+    display: block !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    margin: 0;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+
+  @page {
+    size: landscape;
+    margin: 10mm;
+  }
+
+  /* Statement Print Specifics */
+  .print-area table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  .print-area th {
+    background: #f1f5f9 !important;
+    -webkit-print-color-adjust: exact;
+    color: #0f172a;
+    font-weight: 700;
+    padding: 10px;
+    text-align: left;
+    border-bottom: 2px solid #cbd5e1;
+  }
+  .print-area td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 12px;
+  }
+  .print-area tr:nth-child(even) {
+    background: #f8fafc !important;
+    -webkit-print-color-adjust: exact;
+  }
+  .print-area button, .print-area .btn {
+    display: none !important; /* Hide action buttons */
+  }
+
+  /* Prevent footer from repeating on every page */
+  .print-area tfoot {
+    display: table-row-group;
+  }
+
+  /* Receipt Print Specifics */
+  .print-mode-receipt #printArea {
+    padding: 0;
+    display: flex !important;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  .print-area .receipt-wrapper {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto !important;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  /* Force background colors to print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }
