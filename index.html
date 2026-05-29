@@ -306,8 +306,8 @@
                 <label for="visit"
                   style="font-size: 10px; font-weight: 800; color: #0284c7; text-transform: uppercase;">Visit
                   Type:</label>
-                <input type="text" id="visit" readonly
-                  style="width: 80px; padding: 6px 10px; font-size: 11px; font-weight: 800; color: #0369a1; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 4px; outline: none; text-align: center;">
+                <input type="text" id="visit" oninput="handleVisitTypeInput()"
+                  style="width: 175px; padding: 6px 10px; font-size: 9px; font-weight: 800; color: #0369a1; background: #fff; border: 1px solid #7dd3fc; border-radius: 4px; outline: none; text-align: center; text-overflow: ellipsis;">
               </div>
               <!-- Valid Upto -->
               <div style="display: flex; align-items: center; gap: 4px; margin-left: 4px;">
@@ -420,7 +420,14 @@
                     style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; color: #6d28d9; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 800;">
                     <input type="checkbox" id="isExtraVisit" onchange="handleExtraVisitCheckbox()"
                       style="margin: 0; width: 16px; height: 16px; cursor: pointer; accent-color: #6d28d9;">
-                    Refund (Extra Visit)
+                    Extra Visit
+                  </label>
+
+                  <label for="fromAnotherClinic"
+                    style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; color: #047857; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 800;">
+                    <input type="checkbox" id="fromAnotherClinic" onchange="handleAnotherClinicChange()"
+                      style="margin: 0; width: 16px; height: 16px; cursor: pointer; accent-color: #047857;">
+                    Patient from another clinic
                   </label>
                 </div>
 
@@ -441,12 +448,18 @@
                     <input type="number" id="fee" class="smart-align" placeholder="0" readonly
                       style="width: 100%; padding: 6px 10px; font-size: 14px;; font-family: monospace; background: #fff; border: 1px solid #bae6fd; border-radius: 4px; outline: none; color: #0284c7;">
                   </div>
-                  <div style="display: flex; align-items: center; gap: 4px; flex: 1; min-width: 90px;">
+                  <div style="display: flex; align-items: center; gap: 4px; flex: 1.3; min-width: 140px;">
                     <label for="paid"
                       style="font-size: 9px; font-weight: 800; color: #15803d; text-transform: uppercase; white-space: nowrap;">Paid:</label>
-                    <input type="number" id="paid" class="smart-align" placeholder="0"
-                      oninput="uncheckObservation(); calculateBalance()"
-                      style="width: 100%; padding: 6px 10px; font-size: 15px;; font-family: monospace; background: #fff; border: 2px solid #86efac; border-radius: 4px; outline: none; color: #16a34a;">
+                    <div style="position: relative; width: 100%;">
+                      <input type="number" id="paid" class="smart-align" placeholder="0"
+                        oninput="uncheckObservation(); calculateBalance()"
+                        style="width: 100%; padding: 6px 75px 6px 6px; font-size: 15px; font-family: monospace; background: #fff; border: 2px solid #86efac; border-radius: 4px; outline: none; color: #16a34a; box-sizing: border-box; text-align: left !important;">
+                      <div style="position: absolute; right: 3px; top: 50%; transform: translateY(-50%); display: flex; gap: 2px;">
+                        <button type="button" onclick="setDoctorPaidStatus(true)" style="background: #16a34a; color: white; border: none; padding: 3px 5px; border-radius: 3px; font-size: 9px; cursor: pointer; font-weight: 800; text-transform: uppercase;" title="Fully Paid">Paid</button>
+                        <button type="button" onclick="setDoctorPaidStatus(false)" style="background: #ef4444; color: white; border: none; padding: 3px 5px; border-radius: 3px; font-size: 9px; cursor: pointer; font-weight: 800; text-transform: uppercase;" title="Not Paid">Unpaid</button>
+                      </div>
+                    </div>
                   </div>
                   <div style="display: flex; align-items: center; gap: 4px; flex: 1; min-width: 90px;">
                     <label for="balance"
@@ -475,13 +488,19 @@
                       oninput="calculateMedicineBalance()"
                       style="width: 100%; padding: 6px 10px; font-size: 14px;; font-family: monospace; background: #fff; border: 1px solid #fed7aa; border-radius: 4px; outline: none; color: #c2410c;">
                   </div>
-                  <div style="display: flex; align-items: center; gap: 4px; flex: 1; min-width: 90px;">
+                  <div style="display: flex; align-items: center; gap: 4px; flex: 1.3; min-width: 140px;">
                     <label for="medicinePaid"
                       style="font-size: 9px; font-weight: 800; color: #15803d; text-transform: uppercase; white-space: nowrap;">Med
                       Paid:</label>
-                    <input type="number" id="medicinePaid" class="smart-align" placeholder="0"
-                      oninput="uncheckObservation(); calculateMedicineBalance()"
-                      style="width: 100%; padding: 6px 10px; font-size: 15px;; font-family: monospace; background: #fff; border: 2px solid #86efac; border-radius: 4px; outline: none; color: #16a34a;">
+                    <div style="position: relative; width: 100%;">
+                      <input type="number" id="medicinePaid" class="smart-align" placeholder="0"
+                        oninput="uncheckObservation(); calculateMedicineBalance()"
+                        style="width: 100%; padding: 6px 75px 6px 6px; font-size: 15px; font-family: monospace; background: #fff; border: 2px solid #86efac; border-radius: 4px; outline: none; color: #16a34a; box-sizing: border-box; text-align: left !important;">
+                      <div style="position: absolute; right: 3px; top: 50%; transform: translateY(-50%); display: flex; gap: 2px;">
+                        <button type="button" onclick="setMedicinePaidStatus(true)" style="background: #16a34a; color: white; border: none; padding: 3px 5px; border-radius: 3px; font-size: 9px; cursor: pointer; font-weight: 800; text-transform: uppercase;" title="Fully Paid">Paid</button>
+                        <button type="button" onclick="setMedicinePaidStatus(false)" style="background: #ef4444; color: white; border: none; padding: 3px 5px; border-radius: 3px; font-size: 9px; cursor: pointer; font-weight: 800; text-transform: uppercase;" title="Not Paid">Unpaid</button>
+                      </div>
+                    </div>
                   </div>
                   <div style="display: flex; align-items: center; gap: 4px; flex: 1; min-width: 90px;">
                     <label for="medicineBalance"
@@ -649,8 +668,14 @@
               </div>
             </div>
 
-            <!-- Table -->
-            <div class="table-container" style="max-height: calc(100vh - 170px); overflow-y: auto; border-radius: 0;">
+            <!-- Doctor Tally Tabs -->
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+              <button id="dtTabStatement" onclick="switchDoctorTallyTab('statement')" style="padding: 6px 16px; border: none; background: #e2e8f0; color: #475569; border-radius: 4px; cursor: pointer; font-weight: 800; font-size: 13px;">Statement</button>
+              <button id="dtTabHistory" onclick="switchDoctorTallyTab('history')" style="padding: 6px 16px; border: none; background: #0ea5e9; color: white; border-radius: 4px; cursor: pointer; font-weight: 800; font-size: 13px;">Payment History</button>
+            </div>
+
+            <!-- Statement Table Container -->
+            <div id="dtStatementContainer" class="table-container" style="display: none; max-height: calc(100vh - 210px); overflow-y: auto; border-radius: 0;">
               <table style="width: 100%;">
                 <thead>
                   <tr>
@@ -674,6 +699,33 @@
                     <td id="dtTotalPaid" style="color: #16a34a;">₹ 0</td>
                     <td id="dtTotalShehjar" style="color: #8b5cf6;">₹ 0</td>
                   </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <!-- Payment History Table Container -->
+            <div id="dtHistoryContainer" class="table-container" style="max-height: calc(100vh - 210px); overflow-y: auto; border-radius: 0;">
+              <table style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>No. of First Visits × Fee = Total Amount</th>
+                    <th>Paid by Shehjar</th>
+                  </tr>
+                </thead>
+                <tbody id="dtHistoryTableBody">
+                  <!-- Data populated via JS -->
+                </tbody>
+                <tfoot
+                  style="position: sticky; bottom: 5px; background: #f0fdf4; font-weight: bold; border-top: 2px solid #bbf7d0; border-bottom: 2px solid #bbf7d0; box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05); z-index: 10;">
+                  <tr>
+                    <td style="text-align: right; color: #475569; padding-right: 15px;">TOTAL:</td>
+                    <td id="dtHistoryTotalAmount" style="color: #0284c7;">₹ 0</td>
+                    <td id="dtHistoryTotalShehjar" style="color: #16a34a;">₹ 0</td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" style="text-align: right; color: #475569; padding-right: 15px;">REMAINING BALANCE:</td>
+                    <td id="dtHistoryRemaining" style="color: #b91c1c;">₹ 0</td>
                   </tr>
                 </tfoot>
               </table>
