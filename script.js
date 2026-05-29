@@ -292,10 +292,11 @@ function renderObservationList(data) {
   let finalObsPatients = obsPatients.filter(p => {
     if (paidFilterVal === "all") return true;
     const visitStr = String(p.visit || "").toLowerCase().trim();
-    // "paid" filter: show all Visit 1 patients (regardless of whether they paid or not)
-    if (paidFilterVal === "paid") return visitStr === "visit 1" || visitStr === "visit1";
-    // "free" (Other Visits) filter: show all non-Visit-1 patients
-    if (paidFilterVal === "free") return visitStr !== "visit 1" && visitStr !== "visit1";
+    const hasVisit1 = visitStr.includes("visit 1") || visitStr.includes("visit1");
+    const isExtra = visitStr.includes("extra");
+    
+    if (paidFilterVal === "paid") return hasVisit1 && !isExtra;
+    if (paidFilterVal === "free") return !hasVisit1 || isExtra;
     return true;
   });
 
@@ -397,6 +398,33 @@ function populateDoctorsDropdown(selectedDoctor = "") {
     if (d === selectedDoctor) opt.selected = true;
     sel.appendChild(opt);
   });
+}
+
+function setDoctorPaidStatus(isPaid) {
+  uncheckObservation();
+  const feeInput = document.getElementById("fee");
+  const paidInput = document.getElementById("paid");
+  
+  if (isPaid) {
+    paidInput.value = feeInput.value || 0;
+  } else {
+    paidInput.value = 0;
+  }
+  calculateBalance();
+}
+
+function setMedicinePaidStatus(isPaid) {
+  uncheckObservation();
+  const prevMed = parseFloat(document.getElementById("prevMedBal").value) || 0;
+  const mFee = parseFloat(document.getElementById("medicineFee").value) || 0;
+  const paidInput = document.getElementById("medicinePaid");
+  
+  if (isPaid) {
+    paidInput.value = prevMed + mFee;
+  } else {
+    paidInput.value = 0;
+  }
+  calculateMedicineBalance();
 }
 
 function calculateBalance() {
@@ -530,6 +558,48 @@ function applyPatientHistory(lastRecord) {
   handleObservationChange();
 }
 
+// Another Clinic Logic
+function handleAnotherClinicChange() {
+  const isAnother = document.getElementById("fromAnotherClinic").checked;
+  const isExtra = document.getElementById("isExtraVisit");
+  
+  if (isExtra && isExtra.checked) {
+    // If Extra Visit is also checked, let it handle the naming logic
+    handleExtraVisitCheckbox();
+  } else {
+    const visitInput = document.getElementById("visit");
+    const feeInput = document.getElementById("fee");
+    const defaultFee = localStorage.getItem("defaultFee") || "300";
+
+    if (isAnother) {
+      visitInput.value = "Patient from Another Clinic - Visit 2";
+      feeInput.value = 0;
+    } else {
+      if (visitInput.value === "Patient from Another Clinic - Visit 2" || visitInput.value.includes("Patient from Another Clinic - Extra Visit")) {
+        visitInput.value = "Visit 1";
+        feeInput.value = defaultFee;
+      }
+    }
+    visitInput.title = visitInput.value;
+  }
+  calculateBalance();
+}
+
+function handleVisitTypeInput() {
+  const visitVal = document.getElementById("visit").value.toLowerCase();
+  const feeInput = document.getElementById("fee");
+  const defaultFee = localStorage.getItem("defaultFee") || "300";
+
+  if (visitVal.includes("visit 1") || visitVal === "visit1") {
+    feeInput.value = defaultFee;
+  } else if (visitVal.includes("visit 2") || visitVal.includes("extra") || visitVal.includes("another clinic")) {
+    feeInput.value = 0;
+  }
+  
+  document.getElementById("visit").title = document.getElementById("visit").value;
+  calculateBalance();
+}
+
 // Checkbox logic for Extra Visit
 function handleExtraVisitCheckbox() {
   const isExtra = document.getElementById("isExtraVisit").checked;
@@ -584,19 +654,23 @@ function handleExtraVisitCheckbox() {
     document.getElementById("btnText").innerText = (document.getElementById("formMode").value === "update") ? "Update Entry" : "Save Entry";
     
     // Calculate the Extra Visit Name (Extra Visit 1, Extra Visit 2, etc.)
-    let extraVisitName = "Extra Visit 1";
+    const isAnother = document.getElementById("fromAnotherClinic")?.checked;
+    const baseName = isAnother ? "Patient from Another Clinic - Extra Visit" : "Extra Visit";
+    
+    let extraVisitName = `${baseName} 1`;
     if (mode === "update" && origVis.toLowerCase().includes("extra visit")) {
       extraVisitName = origVis; // Keep the same name if we are already editing this specific Extra Visit
     } else {
       const extraVisits = history.filter(p => parseInt(p.checkup_id) === parseInt(checkupId) && String(p.visit).toLowerCase().includes("extra visit"));
       if (extraVisits.length > 0) {
-        extraVisitName = `Extra Visit ${extraVisits.length + 1}`;
+        extraVisitName = `${baseName} ${extraVisits.length + 1}`;
       }
     }
 
     document.getElementById("activeCheckupId").value = checkupId;
     document.getElementById("displayCheckupId").value = checkupId + " ✚";
     visitInput.value = extraVisitName;
+    visitInput.title = extraVisitName;
     feeInput.value = 0;
     paidInput.value = "";
     document.getElementById("validUpto").value = validUpto;
@@ -1190,15 +1264,15 @@ function clearForm(keepId = false) {
   const paidInputClear = document.getElementById("paid");
   if (paidInputClear) paidInputClear.disabled = false;
 
-  const obs = document.getElementById("underObservation");
-  if (obs) {
-    obs.checked = false;
-    handleObservationChange();
-  }
-  
+
   const leftClinic = document.getElementById("leftClinic");
   if (leftClinic) {
     leftClinic.checked = false;
+  }
+
+  const anotherClinic = document.getElementById("fromAnotherClinic");
+  if (anotherClinic) {
+    anotherClinic.checked = false;
   }
 
   // Show preview IDs for next new patient entry
@@ -1358,6 +1432,9 @@ function handleObservationChange() {
   
   if (isObs && isLeft && isLeft.checked) {
     isLeft.checked = false; // Mutually exclusive
+  } else if (!isObs && isLeft && !isLeft.checked) {
+    // Auto check leftClinic if underObservation is unchecked
+    isLeft.checked = true;
   }
 
   const tooltip = "This patient is under observation. Please uncheck the under observation then you can enter the amount.";
@@ -1402,6 +1479,12 @@ function uncheckObservation() {
   const obsCheckbox = document.getElementById("underObservation");
   if (obsCheckbox.checked) {
     obsCheckbox.checked = false;
+    
+    const leftClinic = document.getElementById("leftClinic");
+    if (leftClinic && !leftClinic.checked) {
+      leftClinic.checked = true;
+    }
+
     // Just enable the inputs without clearing the value since they are typing
     const paidInput = document.getElementById("paid");
     const medPaidInput = document.getElementById("medicinePaid");
@@ -1564,6 +1647,27 @@ async function switchTab(tabId, btnElement) {
   }
 }
 
+let currentDoctorTallyTab = 'history';
+
+window.switchDoctorTallyTab = function(tab) {
+  currentDoctorTallyTab = tab;
+  if (tab === 'statement') {
+    document.getElementById('dtStatementContainer').style.display = 'block';
+    document.getElementById('dtHistoryContainer').style.display = 'none';
+    document.getElementById('dtTabStatement').style.background = '#0ea5e9';
+    document.getElementById('dtTabStatement').style.color = 'white';
+    document.getElementById('dtTabHistory').style.background = '#e2e8f0';
+    document.getElementById('dtTabHistory').style.color = '#475569';
+  } else {
+    document.getElementById('dtStatementContainer').style.display = 'none';
+    document.getElementById('dtHistoryContainer').style.display = 'block';
+    document.getElementById('dtTabStatement').style.background = '#e2e8f0';
+    document.getElementById('dtTabStatement').style.color = '#475569';
+    document.getElementById('dtTabHistory').style.background = '#0ea5e9';
+    document.getElementById('dtTabHistory').style.color = 'white';
+  }
+}
+
 // Reset Doctor Tally Filters
 function resetDoctorTallyFilters() {
   document.getElementById("dtFilterDoctor").value = "";
@@ -1722,7 +1826,86 @@ function renderDoctorTally() {
   }
   
   updateReceiptCalculation();
+  renderDoctorHistory(filtered);
 }
+
+function renderDoctorHistory(filteredData) {
+  const tbody = document.getElementById("dtHistoryTableBody");
+  tbody.innerHTML = "";
+  
+  const fDoc = document.getElementById("dtFilterDoctor").value.trim();
+  
+  if (fDoc === "") {
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #64748b; padding: 30px; font-weight: 700; font-size: 16px;">Please select the doctor first.</td></tr>`;
+    document.getElementById("dtHistoryTotalAmount").innerText = `₹ 0`;
+    document.getElementById("dtHistoryTotalShehjar").innerText = `₹ 0`;
+    document.getElementById("dtHistoryRemaining").innerText = `₹ 0`;
+    return;
+  }
+  
+  if (!filteredData || filteredData.length === 0) {
+    document.getElementById("dtHistoryTotalAmount").innerText = `₹ 0`;
+    document.getElementById("dtHistoryTotalShehjar").innerText = `₹ 0`;
+    document.getElementById("dtHistoryRemaining").innerText = `₹ 0`;
+    return;
+  }
+
+  // Aggregate by Date
+  const historyMap = {};
+
+  filteredData.forEach(p => {
+    const date = p.date;
+    if (!date) return;
+    
+    if (!historyMap[date]) {
+      historyMap[date] = { date: date, visit1Count: 0, totalAmount: 0, shehjarPaid: 0 };
+    }
+    
+    const visitStr = String(p.visit || "").toLowerCase().trim();
+    const shehjar = parseFloat(p.payment_by_shehjar) || 0;
+    const isSettlement = shehjar > 0 && !p.patient_id;
+    
+    if (isSettlement) {
+      historyMap[date].shehjarPaid += shehjar;
+    } else {
+      // Check if it's a first visit (Visit 1 and not Extra)
+      const hasVisit1 = visitStr.includes("visit 1") || visitStr.includes("visit1");
+      const isExtra = visitStr.includes("extra");
+      
+      if (hasVisit1 && !isExtra) {
+        historyMap[date].visit1Count += 1;
+        historyMap[date].totalAmount += parseFloat(p.fee) || 0;
+      }
+    }
+  });
+
+  // Sort dates descending
+  const sortedDates = Object.keys(historyMap).sort((a, b) => new Date(b) - new Date(a));
+  
+  let grandTotalAmount = 0;
+  let grandTotalShehjar = 0;
+
+  sortedDates.forEach(d => {
+    const data = historyMap[d];
+    grandTotalAmount += data.totalAmount;
+    grandTotalShehjar += data.shehjarPaid;
+    
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${data.date}</td>
+      <td style="color: #0284c7; font-weight: 500;">
+        ${data.visit1Count} <span style="color: #94a3b8; font-size: 11px;">visits</span> = <strong>₹ ${data.totalAmount}</strong>
+      </td>
+      <td style="color: #8b5cf6; font-weight: 500;">₹ ${data.shehjarPaid}</td>
+    `;
+    tbody.appendChild(row);
+  });
+  
+  document.getElementById("dtHistoryTotalAmount").innerText = `₹ ${grandTotalAmount}`;
+  document.getElementById("dtHistoryTotalShehjar").innerText = `₹ ${grandTotalShehjar}`;
+  document.getElementById("dtHistoryRemaining").innerText = `₹ ${grandTotalAmount - grandTotalShehjar}`;
+}
+
 
 window.updateReceiptCalculation = function() {
   let lastBal = parseFloat(document.getElementById("rcptLastBalance").dataset.val);
@@ -1836,8 +2019,14 @@ window.printStatement = function() {
   const from = document.getElementById("dtFilterFromDate").value || "All Time";
   const to = document.getElementById("dtFilterToDate").value || "All Time";
 
-  // Get table HTML by cloning
-  const tableContainer = document.getElementById("dtTableBody").closest('table');
+  // Get table HTML by cloning based on active tab
+  let tableContainer;
+  if (currentDoctorTallyTab === 'history') {
+    tableContainer = document.getElementById("dtHistoryTableBody").closest('table');
+  } else {
+    tableContainer = document.getElementById("dtTableBody").closest('table');
+  }
+  
   const cloneTable = tableContainer.cloneNode(true);
   
   // To prevent the total footer from repeating on every printed page,
@@ -1859,7 +2048,7 @@ window.printStatement = function() {
       </div>
       <div style="text-align: left;">
         <h1 style="margin: 0; color: #fff; font-size: 28px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Shehjaar Medicate</h1>
-        <p style="margin: 5px 0 0; color: rgba(255,255,255,0.9); font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;">Doctor Activity & Payment Statement</p>
+        <p style="margin: 5px 0 0; color: rgba(255,255,255,0.9); font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;">${currentDoctorTallyTab === 'history' ? "Doctor Payment History" : "Doctor Activity & Payment Statement"}</p>
       </div>
     </div>
     <div style="display: flex; justify-content: space-between; font-size: 14px; color: #475569; font-weight: bold; background: #f8fafc; padding: 12px 20px; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none; font-family: sans-serif; margin-bottom: 20px; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
