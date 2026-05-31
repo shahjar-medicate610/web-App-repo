@@ -564,7 +564,7 @@ function applyPatientHistory(lastRecord) {
       document.getElementById("displayCheckupId").value = lastRecord.checkup_id || "";
       document.getElementById("visit").value = "Visit 1";
       document.getElementById("validUpto").value = lastRecord.checkup_duration_validity || calculateExpiryDate(validityDays);
-      document.getElementById("fee").value = 0;
+      document.getElementById("fee").value = localStorage.getItem("defaultFee") || "300";
       hintEl.style.display = "block";
       hintEl.innerHTML = `ℹ️ Resuming Visit 1 (Previously Left Without Treatment).`;
     }
@@ -1667,9 +1667,12 @@ function handleLeftClinicChange() {
   }
 }
 
-// Handle Left Without Checkup checkbox change
 function handleLeftWithoutCheckupChange() {
   const isLeftWithout = document.getElementById("leftWithoutCheckup").checked;
+  const visitInput = document.getElementById("visit");
+  const feeInput = document.getElementById("fee");
+  const paidInput = document.getElementById("paid");
+  
   if (isLeftWithout) {
     // Uncheck other conflicting boxes
     const obsCheckbox = document.getElementById("underObservation");
@@ -1680,21 +1683,49 @@ function handleLeftWithoutCheckupChange() {
     const leftClinicCheckbox = document.getElementById("leftClinic");
     if (leftClinicCheckbox) leftClinicCheckbox.checked = false;
     
-    // Do not clear the visit type so we know which visit was aborted
-    // document.getElementById("visit").value = "";
+    // Store original visit type if not already stored, then change it
+    if (visitInput.value !== "Left Clinic Without Treatment") {
+      visitInput.dataset.originalVisit = visitInput.value;
+    }
+    visitInput.value = "Left Clinic Without Treatment";
+    
+    // Store original fee and paid
+    if (!feeInput.dataset.originalFee) feeInput.dataset.originalFee = feeInput.value;
+    if (!paidInput.dataset.originalPaid) paidInput.dataset.originalPaid = paidInput.value;
     
     // Set Fees to 0 for this specific entry (since they are leaving)
-    // Actually if they are leaving without checkup, they might have already paid or are taking a refund. 
-    // Usually we just mark fee=0 and paid=0 for the abort action so it balances to 0.
-    document.getElementById("fee").value = "0";
-    document.getElementById("paid").value = "0";
-    document.getElementById("paid").disabled = true;
+    feeInput.value = "0";
+    paidInput.value = "0";
+    paidInput.disabled = true;
     
     calculateBalance();
   } else {
-    // We don't force 'Visit 1' here because it might be a Visit 2 that we un-aborted.
-    // Instead we just re-enable the paid field.
-    document.getElementById("paid").disabled = false;
+    // Restore visit type if it was saved
+    if (visitInput.dataset.originalVisit) {
+      visitInput.value = visitInput.dataset.originalVisit;
+      delete visitInput.dataset.originalVisit; // clear it
+    } else {
+      visitInput.value = "Visit 1"; // Fallback
+    }
+    
+    // Restore fee
+    if (feeInput.dataset.originalFee) {
+      feeInput.value = feeInput.dataset.originalFee;
+      delete feeInput.dataset.originalFee;
+    } else {
+      handleVisitTypeInput(); // Fallback recalculation
+    }
+    
+    // Restore paid
+    if (paidInput.dataset.originalPaid) {
+      paidInput.value = paidInput.dataset.originalPaid;
+      delete paidInput.dataset.originalPaid;
+    } else {
+      paidInput.value = "";
+    }
+    
+    // Re-enable the paid field.
+    paidInput.disabled = false;
     calculateBalance();
   }
 }
