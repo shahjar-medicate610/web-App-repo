@@ -28,6 +28,13 @@
 </head>
 
 <body>
+  <div id="offlineBanner" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 99999; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px);">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ef4444; color: white; padding: 30px 40px; border-radius: 12px; text-align: center; width: 90%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+      <i class="fas fa-wifi" style="font-size: 48px; margin-bottom: 15px;"></i>
+      <h2 style="margin: 0 0 15px 0; font-size: 24px;">No Internet Connection</h2>
+      <p style="margin: 0; font-size: 16px; line-height: 1.5; font-weight: 500;">Please connect to the internet to continue.<br><br>Offline entries are blocked to prevent data sync errors and token number duplication.</p>
+    </div>
+  </div>
 
   <div id="splashLoader" class="splash-loader" style="display: none;">
     <div class="spinner"></div>
@@ -384,13 +391,18 @@
                 </div>
               </div>
               <!-- Doctor -->
-              <div style="display: flex; align-items: center; gap: 6px; flex: 1.5; min-width: 140px;">
-                <label for="doctor"
-                  style="font-size: 10px; font-weight: 800; color: #0f766e; text-transform: uppercase;">Doctor:</label>
-                <select id="doctor"
-                  style="width: 100%; padding: 8px 10px; font-size: 14px;; color: #0f766e; background: #f0fdfa; border: 1px solid #5eead4; border-radius: 4px; outline: none; cursor: pointer;">
-                  <option value="">-- Select --</option>
-                </select>
+              <div style="display: flex; flex-direction: column; flex: 1.5; min-width: 140px; position: relative; justify-content: center;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <label for="doctor"
+                    style="font-size: 10px; font-weight: 800; color: #0f766e; text-transform: uppercase;">Doctor:</label>
+                  <select id="doctor" onchange="checkPatientBehavior()"
+                    style="width: 100%; padding: 8px 10px; font-size: 14px; color: #0f766e; background: #f0fdfa; border: 1px solid #5eead4; border-radius: 4px; outline: none; cursor: pointer;">
+                    <option value="">-- Select --</option>
+                  </select>
+                </div>
+                <div id="behaviorAlert" style="display: none; position: absolute; top: calc(100% + 2px); left: 0; right: 0; background: #fef2f2; color: #b91c1c; font-size: 10px; font-weight: 800; padding: 4px 6px; border: 1px solid #fecaca; border-radius: 4px; z-index: 10; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                  ⚠️ This patient has a bad behavior history with this doctor. Please appoint a different doctor.
+                </div>
               </div>
             </div>
 
@@ -400,35 +412,32 @@
               <div style="flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 260px;">
 
                 <!-- Row 3: Toggles -->
-                <div
-                  style="display: flex; gap: 15px; justify-content: center; align-items: center; background: #e2e8f0; padding: 6px 15px; border-radius: 6px; border: 1px solid #cbd5e1; flex-wrap: wrap;">
-                  <label for="underObservation"
-                    style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; color: #b45309; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 800;">
-                    <input type="checkbox" id="underObservation" onchange="handleObservationChange()" checked
-                      style="margin: 0; width: 16px; height: 16px; cursor: pointer; accent-color: #b45309;">
+                <div style="display:flex; align-items:center; background:#e2e8f0; padding:7px 12px; border-radius:6px; border:1px solid #cbd5e1; gap:18px; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none;">
+                  <label for="underObservation" style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:11px; color:#b45309; font-weight:800; text-transform:uppercase; white-space:nowrap; flex-shrink:0;">
+                    <input type="checkbox" id="underObservation" onchange="handleObservationChange()" checked style="width:13px; height:13px; cursor:pointer; accent-color:#b45309; flex-shrink:0; margin:0;">
                     Under Observation
                   </label>
-
-                  <label for="leftClinic"
-                    style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; color: #1e40af; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 800;">
-                    <input type="checkbox" id="leftClinic" onchange="handleLeftClinicChange()"
-                      style="margin: 0; width: 16px; height: 16px; cursor: pointer; accent-color: #1e40af;">
+                  <label for="leftClinic" style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:11px; color:#1e40af; font-weight:800; text-transform:uppercase; white-space:nowrap; flex-shrink:0;">
+                    <input type="checkbox" id="leftClinic" onchange="handleLeftClinicChange()" style="width:13px; height:13px; cursor:pointer; accent-color:#1e40af; flex-shrink:0; margin:0;">
                     Left Clinic
                   </label>
-
-                  <label for="isExtraVisit"
-                    style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; color: #6d28d9; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 800;">
-                    <input type="checkbox" id="isExtraVisit" onchange="handleExtraVisitCheckbox()"
-                      style="margin: 0; width: 16px; height: 16px; cursor: pointer; accent-color: #6d28d9;">
+                  <label for="isExtraVisit" style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:11px; color:#6d28d9; font-weight:800; text-transform:uppercase; white-space:nowrap; flex-shrink:0;">
+                    <input type="checkbox" id="isExtraVisit" onchange="handleExtraVisitCheckbox()" style="width:13px; height:13px; cursor:pointer; accent-color:#6d28d9; flex-shrink:0; margin:0;">
                     Extra Visit
                   </label>
-
-                  <label for="fromAnotherClinic"
-                    style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 13px; color: #047857; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 800;">
-                    <input type="checkbox" id="fromAnotherClinic" onchange="handleAnotherClinicChange()"
-                      style="margin: 0; width: 16px; height: 16px; cursor: pointer; accent-color: #047857;">
-                    Patient from another clinic
+                  <label for="fromAnotherClinic" style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:11px; color:#047857; font-weight:800; text-transform:uppercase; white-space:nowrap; flex-shrink:0;">
+                    <input type="checkbox" id="fromAnotherClinic" onchange="handleAnotherClinicChange()" style="width:13px; height:13px; cursor:pointer; accent-color:#047857; flex-shrink:0; margin:0;">
+                    Another Clinic
                   </label>
+                  <label for="leftWithoutCheckup" style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:11px; color:#b91c1c; font-weight:800; text-transform:uppercase; white-space:nowrap; flex-shrink:0;">
+                    <input type="checkbox" id="leftWithoutCheckup" onchange="handleLeftWithoutCheckupChange()" style="width:13px; height:13px; cursor:pointer; accent-color:#b91c1c; flex-shrink:0; margin:0;">
+                    Left w/o Treatment
+                  </label>
+                  <select id="patientBehavior" onchange="updateBehaviorDropdownColor()">
+                    <option value="" selected>-- Behavior --</option>
+                    <option value="Good">Good Behavior</option>
+                    <option value="Bad">Bad Behavior</option>
+                  </select>
                 </div>
 
                 <!-- Doctor Balance -->
@@ -584,7 +593,7 @@
                   <th style="color: #fff; font-weight: 800;">Visit</th>
                   <th style="color: #fff; font-weight: 800;">Dr. Fee Paid</th>
                   <th style="color: #fff; font-weight: 800;">Validity Upto</th>
-                  <th style="color: #fff; font-weight: 800;">Status</th>
+                  <th style="color: #fff; font-weight: 800; min-width: 140px; white-space: nowrap;">Status</th>
                   <th style="color: #fff; font-weight: 800;">Action</th>
                 </tr>
               </thead>
@@ -1192,7 +1201,7 @@
                 <th>Med. Paid</th>
                 <th>Med. Bal</th>
                 <th>Validity Upto</th>
-                <th>Status</th>
+                <th style="min-width: 120px;">Status</th>
                 <th>Action</th>
               </tr>
             </thead>
