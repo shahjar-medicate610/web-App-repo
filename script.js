@@ -322,15 +322,22 @@ function renderObservationList(data) {
     const bal = parseFloat(p.balance) || 0;
     const isPending = bal > 0;
     const isAdvance = bal < 0;
+    // Parse behavior from status: "Left Clinic (Bad)" → cleanStatus="Left Clinic", behavior="Bad"
+    const rawStatus = String(p.status || "");
+    const behMatch = rawStatus.match(/\s*\((Good|Bad)\)$/);
+    const obsCleanStatus = behMatch ? rawStatus.replace(/\s*\((Good|Bad)\)$/, "").trim() : rawStatus;
+    const obsBehavior = behMatch ? behMatch[1] : null;
+
     let badgeClass;
-    if (p.status === "Left Clinic") badgeClass = 'status-left-clinic';
-    else if (p.status === "Refunded-->Extra-visit") badgeClass = 'status-refunded';
-    else if (p.status === "Under Observation") badgeClass = 'status-observation';
+    if (obsCleanStatus === "Left Clinic") badgeClass = 'status-left-clinic';
+    else if (obsCleanStatus === "Refunded-->Extra-visit") badgeClass = 'status-refunded';
+    else if (obsCleanStatus === "Under Observation") badgeClass = 'status-observation';
     else if (isPending) badgeClass = 'status-pending';
     else if (isAdvance) badgeClass = 'status-advance';
     else badgeClass = 'status-done';
     
-    let rowStyle = p.status === "Left Clinic" ? "background-color: #bbf7d0;" : "";
+    let rowStyle = (obsCleanStatus === "Left Clinic") ? "background-color: #bbf7d0;" : "";
+    if (obsBehavior === "Bad") rowStyle = "background-color: #fee2e2;";
     
     html += `
       <tr style="${rowStyle}">
@@ -518,12 +525,52 @@ function applyPatientHistory(lastRecord) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const expiryDateStr = lastRecord.checkup_duration_validity || lastRecord.duration;
-  const expiryDate = new Date(expiryDateStr);
-  const isExpired = today > expiryDate || isNaN(expiryDate.getTime());
+  let expiryDateStr = lastRecord.checkup_duration_validity || lastRecord.duration;
+  let expiryDate = new Date(expiryDateStr);
+  let isExpired = today > expiryDate || isNaN(expiryDate.getTime());
 
-  // Valid Session for Visit 2
-  if (!isExpired && lastRecord.visit === "Visit 1") {
+  const rawStatus = String(lastRecord.status || "");
+  const cleanStatus = rawStatus.replace(/\s*\((Good|Bad)\)$/, "").trim();
+
+  // Find the last COMPLETED record to determine the cycle state robustly
+  let lastCompletedRecord = null;
+  for (let p of patientHistory) {
+    const pSt = String(p.status || "").replace(/\s*\((Good|Bad)\)$/, "").trim();
+    if (pSt !== "Left Without Checkup" && pSt !== "Under Observation" && pSt !== "Registered") {
+      lastCompletedRecord = p;
+      break;
+    }
+  }
+
+  // Fallback to lastRecord if they never completed a visit
+  const referenceRecord = lastCompletedRecord || lastRecord;
+
+  expiryDateStr = referenceRecord.checkup_duration_validity || referenceRecord.duration;
+  expiryDate = new Date(expiryDateStr);
+  isExpired = today > expiryDate || isNaN(expiryDate.getTime());
+
+  // If they left without checkup, dynamically determine which visit they were supposed to be on
+  if (cleanStatus === "Left Without Checkup") {
+    if (lastCompletedRecord && !isExpired && lastCompletedRecord.visit === "Visit 1") {
+      document.getElementById("activeCheckupId").value = lastCompletedRecord.checkup_id || "";
+      document.getElementById("displayCheckupId").value = lastCompletedRecord.checkup_id || "";
+      document.getElementById("visit").value = "Visit 2";
+      document.getElementById("validUpto").value = expiryDateStr;
+      document.getElementById("fee").value = 0;
+      hintEl.style.display = "block";
+      hintEl.innerHTML = `ℹ️ Resuming Visit 2 (Previously Left Without Treatment).`;
+    } else {
+      document.getElementById("activeCheckupId").value = lastRecord.checkup_id || "";
+      document.getElementById("displayCheckupId").value = lastRecord.checkup_id || "";
+      document.getElementById("visit").value = "Visit 1";
+      document.getElementById("validUpto").value = lastRecord.checkup_duration_validity || calculateExpiryDate(validityDays);
+      document.getElementById("fee").value = 0;
+      hintEl.style.display = "block";
+      hintEl.innerHTML = `ℹ️ Resuming Visit 1 (Previously Left Without Treatment).`;
+    }
+  }
+  // Valid Session for Visit 2 (Normal Flow)
+  else if (!isExpired && lastRecord.visit === "Visit 1") {
     document.getElementById("activeCheckupId").value = lastRecord.checkup_id;
     document.getElementById("displayCheckupId").value = lastRecord.checkup_id;
     document.getElementById("visit").value = "Visit 2";
@@ -533,11 +580,10 @@ function applyPatientHistory(lastRecord) {
     hintEl.style.display = "block";
     hintEl.innerHTML = `✅ ID: ${lastRecord.checkup_id} - Session Valid till ${expiryDateStr}. Proceed to Visit 2.`;
   }
-  // Expired or New Cycle
+  // Expired or New Cycle (Normal Flow)
   else {
     document.getElementById("activeCheckupId").value = "";
-    const existingChks = allPatients.filter(p => String(p.patient_id) === String(lastRecord.patient_id));
-    const nextChkId = existingChks.length > 0 ? (Math.max(...existingChks.map(p => parseInt(p.checkup_id) || 0)) + 1) : 1;
+    const nextChkId = patientHistory.length > 0 ? (Math.max(...patientHistory.map(p => parseInt(p.checkup_id) || 0)) + 1) : 1;
     document.getElementById("displayCheckupId").value = String(nextChkId);
     document.getElementById("visit").value = "Visit 1";
     document.getElementById("validUpto").value = calculateExpiryDate(validityDays);
@@ -547,7 +593,7 @@ function applyPatientHistory(lastRecord) {
     if (isExpired && lastRecord.visit === "Visit 1") {
       hintEl.innerHTML = `⚠️ Previous checkup expired on ${expiryDateStr}. Starting new checkup cycle.`;
     } else {
-      hintEl.innerHTML = `🆕 Previous checkup cycle complete. Starting new  checkup cycle.`;
+      hintEl.innerHTML = `🆕 Previous checkup cycle complete. Starting new checkup cycle.`;
     }
   }
 
@@ -556,6 +602,70 @@ function applyPatientHistory(lastRecord) {
   // Check 'Under Observation' by default when entry is started
   document.getElementById("underObservation").checked = true;
   handleObservationChange();
+  
+  // Also check behavior for the auto-populated doctor
+  setTimeout(() => { checkPatientBehavior(); }, 100);
+}
+
+function updateBehaviorDropdownColor() {
+  const behaviorSelect = document.getElementById("patientBehavior");
+  const submitBtn = document.getElementById("submitBtn");
+  if (!behaviorSelect) return;
+  const val = behaviorSelect.value;
+  if (val === "Good") {
+    behaviorSelect.style.background = "#22c55e"; // Green
+    if (submitBtn) submitBtn.style.background = "#22c55e";
+  } else if (val === "Bad") {
+    behaviorSelect.style.background = "#ef4444"; // Red
+    if (submitBtn) submitBtn.style.background = "#ef4444";
+  } else {
+    // Unselected / empty — blue
+    behaviorSelect.style.background = "#2563eb";
+    if (submitBtn) submitBtn.style.background = "linear-gradient(135deg, #0ea5e9, #0284c7)"; // keep default blue CSS
+  }
+}
+
+function checkPatientBehavior() {
+  const doctor = document.getElementById("doctor").value;
+  const activePatientId = document.getElementById("activePatientId").value;
+  const alertEl = document.getElementById("behaviorAlert");
+  const docDropdown = document.getElementById("doctor");
+  const submitBtn = document.getElementById("submitBtn");
+
+  if (!alertEl || !docDropdown) return;
+
+  if (!doctor || !activePatientId) {
+    alertEl.style.display = "none";
+    docDropdown.style.border = "1px solid #5eead4";
+    docDropdown.style.background = "#f0fdfa";
+    return;
+  }
+
+  // Find the MOST RECENT entry for this patient with THIS specific doctor
+  const recordsWithDoc = allPatients.filter(p => 
+    String(p.patient_id) === String(activePatientId) && 
+    String(p.doctor) === String(doctor)
+  );
+
+  let hasBadBehavior = false;
+  if (recordsWithDoc.length > 0) {
+    // allPatients is sorted newest first, so index 0 is the most recent
+    const latestRecord = recordsWithDoc[0];
+    const statusStr = String(latestRecord.status || "");
+    const behMatch = statusStr.match(/\((Good|Bad)\)$/);
+    const extractedBehavior = behMatch ? behMatch[1] : "";
+    hasBadBehavior = (extractedBehavior === "Bad");
+  }
+
+  if (hasBadBehavior) {
+    alertEl.style.display = "block";
+    docDropdown.classList.add("pulse-red-border");
+  } else {
+    alertEl.style.display = "none";
+    docDropdown.classList.remove("pulse-red-border");
+    docDropdown.style.border = "1px solid #5eead4";
+    docDropdown.style.background = "#f0fdfa";
+  }
 }
 
 // Another Clinic Logic
@@ -927,6 +1037,20 @@ async function addPatient() {
     alert("Please select the doctor before saving.");
     return;
   }
+  
+  if (patientId) {
+    const hasBadBehavior = allPatients.some(p => 
+      String(p.patient_id) === String(patientId) && 
+      String(p.doctor) === String(doctor) && 
+      p.patient_behavior === "Bad"
+    );
+    if (hasBadBehavior) {
+      const isConfirmed = await customConfirmAsync(`⚠️ This patient had BAD BEHAVIOR with Dr. ${doctor} last time. Assign to another doctor? \n\nClick Cancel to change the doctor, or click OK to Continue anyway.`);
+      if (!isConfirmed) {
+        return; // User chose to change doctor
+      }
+    }
+  }
 
   const prevDocBal = parseFloat(document.getElementById("prevBal").value) || 0;
   const prevMedBal = parseFloat(document.getElementById("prevMedBal").value) || 0;
@@ -952,6 +1076,7 @@ async function addPatient() {
 
   const isObservation = document.getElementById("underObservation").checked;
   const isLeftClinic = document.getElementById("leftClinic") ? document.getElementById("leftClinic").checked : false;
+  const isLeftWithoutCheckup = document.getElementById("leftWithoutCheckup") ? document.getElementById("leftWithoutCheckup").checked : false;
   const visitType = document.getElementById("visit").value;
   const formMode = document.getElementById("formMode").value;
 
@@ -964,10 +1089,9 @@ async function addPatient() {
   });
   const latestRecord = latestByPatient[finalPatientId];
 
-  if (latestRecord && String(latestRecord.status).trim() === "Under Observation") {
+  if (latestRecord && String(latestRecord.status || "").trim().startsWith("Under Observation")) {
     const origChk = document.getElementById("originalCheckupId").value || finalCheckupId;
     const origVis = document.getElementById("originalVisit").value || document.getElementById("visit").value;
-    const formMode = document.getElementById("formMode").value;
     const editingRowIndex = formMode === "update" ? allPatients.find(p => p.patient_id == finalPatientId && p.checkup_id == origChk && p.visit == origVis)?.row_index : null;
     
     if (formMode === "add" || (formMode === "update" && latestRecord.row_index !== editingRowIndex)) {
@@ -981,6 +1105,8 @@ async function addPatient() {
     finalStatus = "Under Observation";
   } else if (isLeftClinic) {
     finalStatus = "Left Clinic";
+  } else if (isLeftWithoutCheckup) {
+    finalStatus = "Left Without Checkup";
   } else {
     finalStatus = "Registered"; // Default status if nothing is explicitly checked
   }
@@ -993,8 +1119,12 @@ async function addPatient() {
   let finalTokenNo = document.getElementById("tokenNo").value || "";
   if (formMode === "add") {
     const todayStr = formatDate(new Date());
-    const todaysPatients = allPatients.filter(p => p.date === todayStr);
-    finalTokenNo = todaysPatients.length + 1;
+    const todaysTokens = allPatients
+      .filter(p => p.date === todayStr && p.token_no && !isNaN(parseInt(p.token_no)))
+      .map(p => parseInt(p.token_no));
+      
+    let nextToken = todaysTokens.length > 0 ? Math.max(...todaysTokens) + 1 : 1;
+    finalTokenNo = nextToken;
     document.getElementById("tokenNo").value = finalTokenNo;
   }
 
@@ -1013,6 +1143,14 @@ async function addPatient() {
     }
   }
 
+  const patientBehaviorEl = document.getElementById("patientBehavior");
+  const patientBehavior = patientBehaviorEl ? patientBehaviorEl.value : ""; // "Good", "Bad", or "" (unselected)
+  
+  // Append behavior to status if selected (e.g., "Left Clinic (Bad)")
+  if (patientBehavior === "Good" || patientBehavior === "Bad") {
+    finalStatus = finalStatus + " (" + patientBehavior + ")";
+  }
+
   const patientData = {
     patient_id: finalPatientId,
     checkup_id: finalCheckupId,
@@ -1024,7 +1162,7 @@ async function addPatient() {
     fee: parseFloat(document.getElementById("fee").value) || 0,
     paid: parseFloat(document.getElementById("paid").value) || 0,
     balance: parseFloat(document.getElementById("balance").value) || 0,
-    status: finalStatus,
+    status: finalStatus,  // e.g., "Left Clinic (Bad)" or "Left Clinic"
     duration: document.getElementById("validUpto").value,
     action: document.getElementById("formMode").value,
     original_checkup_id: document.getElementById("originalCheckupId").value,
@@ -1035,8 +1173,10 @@ async function addPatient() {
     payment_by_shehjar: parseFloat(document.getElementById("paymentByShehjar").value) || 0,
     medicine_fee: parseFloat(document.getElementById("medicineFee").value) || 0,
     medicine_paid: parseFloat(document.getElementById("medicinePaid").value) || 0,
-    medicine_balance: parseFloat(document.getElementById("medicineBalance").value) || 0
+    medicine_balance: parseFloat(document.getElementById("medicineBalance").value) || 0,
+    patient_behavior: patientBehavior
   };
+
 
   try {
     document.getElementById("btnText").style.display = "none";
@@ -1073,13 +1213,21 @@ async function addPatient() {
       clearForm(true);
       document.getElementById("btnText").style.display = "block";
       document.getElementById("btnLoader").style.display = "none";
-      document.getElementById("submitBtn").disabled = false;
+      const submitBtn = document.getElementById("submitBtn");
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.style.background = "linear-gradient(135deg, #0ea5e9, #0284c7)"; // restore blue
+      }
     }, 500);
   } catch (error) {
     console.error("Save failed locally:", error);
     document.getElementById("btnText").style.display = "block";
     document.getElementById("btnLoader").style.display = "none";
-    document.getElementById("submitBtn").disabled = false;
+    const submitBtnErr = document.getElementById("submitBtn");
+    if (submitBtnErr) {
+      submitBtnErr.disabled = false;
+      submitBtnErr.style.background = "linear-gradient(135deg, #0ea5e9, #0284c7)";
+    }
   }
 }
 
@@ -1150,10 +1298,17 @@ function renderTable(data, resetPage = true) {
     const bal = parseFloat(p.balance) || 0;
     const isPending = bal > 0;
     const isAdvance = bal < 0;
+
+    // Parse behavior from status field: "Left Clinic (Bad)" → cleanStatus="Left Clinic", behavior="Bad"
+    const rawStatus = String(p.status || "");
+    const behaviorMatch = rawStatus.match(/\s*\((Good|Bad)\)$/);
+    const behavior = behaviorMatch ? behaviorMatch[1] : null; // "Good", "Bad", or null
+    const cleanStatus = behaviorMatch ? rawStatus.replace(/\s*\((Good|Bad)\)$/, "").trim() : rawStatus;
+
     let badgeClass;
-    if (p.status === "Left Clinic") badgeClass = 'status-left-clinic';
-    else if (p.status === "Refunded-->Extra-visit") badgeClass = 'status-refunded';
-    else if (p.status === "Under Observation") badgeClass = 'status-observation';
+    if (cleanStatus === "Left Clinic") badgeClass = 'status-left-clinic';
+    else if (cleanStatus === "Refunded-->Extra-visit") badgeClass = 'status-refunded';
+    else if (cleanStatus === "Under Observation") badgeClass = 'status-observation';
     else if (isPending) badgeClass = 'status-pending';
     else if (isAdvance) badgeClass = 'status-advance';
     else badgeClass = 'status-done';
@@ -1165,8 +1320,10 @@ function renderTable(data, resetPage = true) {
     const isSettlement = parseFloat(p.payment_by_shehjar) > 0 && !p.patient_id;
     if (isSettlement) {
       row.classList.add("settlement-row");
-    } else if (p.status === "Left Clinic") {
-      row.style.background = "#bbf7d0"; // darker green background for completed/left
+    } else if (behavior === "Bad") {
+      row.style.background = "#fee2e2"; // red for bad behavior
+    } else if (cleanStatus === "Left Clinic") {
+      row.style.background = "#bbf7d0"; // green for left clinic
     }
 
     setTimeout(() => { row.classList.remove("optimistic-row"); }, 500);
@@ -1190,7 +1347,11 @@ function renderTable(data, resetPage = true) {
       <td style="color: #10b981;">${isSettlement ? '-' : '₹ ' + parseFloat(p.medicine_paid || 0)}</td>
       <td style="font-weight: 700; color: ${parseFloat(p.medicine_balance || 0) > 0 ? '#dc2626' : '#27ae60'}">${isSettlement ? '-' : (parseFloat(p.medicine_balance || 0) > 0 ? '₹ ' + p.medicine_balance : '₹ 0')}</td>
       <td>${isSettlement ? '-' : (p.checkup_duration_validity || p.duration || '-')}</td>
-      <td>${isSettlement ? '-' : `<span class="status-badge ${badgeClass}">${p.status}</span>`}</td>
+      <td>${isSettlement ? '-' : (() => {
+        if (behavior === 'Good') return `<span class="status-badge ${badgeClass}" style="white-space:nowrap;">${cleanStatus}</span><span style="display:inline-block; margin-top:3px; font-size:9px; font-weight:800; color:#16a34a; background:#dcfce7; padding:1px 6px; border-radius:3px;">(Good Behavior)</span>`;
+        if (behavior === 'Bad')  return `<span class="status-badge ${badgeClass}" style="white-space:nowrap;">${cleanStatus}</span><span style="display:inline-block; margin-top:3px; font-size:9px; font-weight:800; color:#dc2626; background:#fee2e2; padding:1px 6px; border-radius:3px;">(Bad Behavior)</span>`;
+        return `<span class="status-badge ${badgeClass}">${cleanStatus}</span>`;
+      })()}</td>
       <td>
         <div style="display: flex; gap: 5px;">
           <button class="btn" style="background: #e0f2fe; color: #0284c7; padding: 5px 10px;" onclick="event.stopPropagation(); ${isSettlement ? 'alert(\'Settlement entries cannot be edited.\')' : `editPatient(${p.patient_id}, ${p.checkup_id}, '${p.visit}')`}" title="Edit / Pay">
@@ -1274,6 +1435,25 @@ function clearForm(keepId = false) {
   if (anotherClinic) {
     anotherClinic.checked = false;
   }
+  
+  // Reset behavior dropdown to UNSELECTED (blank) and button to default blue
+  const behaviorSel = document.getElementById("patientBehavior");
+  if (behaviorSel) {
+    behaviorSel.value = "";          // reset to placeholder
+    behaviorSel.style.background = "#2563eb"; // blue
+  }
+  const submitBtnClear = document.getElementById("submitBtn");
+  if (submitBtnClear) submitBtnClear.style.background = "linear-gradient(135deg, #0ea5e9, #0284c7)"; // restore blue gradient
+
+  // Hide behavior alert and remove pulse class
+  const alertEl = document.getElementById("behaviorAlert");
+  const docDropdown = document.getElementById("doctor");
+  if (alertEl) alertEl.style.display = "none";
+  if (docDropdown) {
+    docDropdown.classList.remove("pulse-red-border");
+    docDropdown.style.border = "1px solid #5eead4";
+    docDropdown.style.background = "#f0fdfa";
+  }
 
   // Show preview IDs for next new patient entry
   refreshPreviewIds();
@@ -1343,9 +1523,14 @@ function updateDatalist() {
 // Auto-fill next available Patient ID and Checkup ID for new patient preview
 function refreshPreviewIds() {
   // Always update Daily Token Number preview first
+  // Find smallest available token for today
   const todayStr = formatDate(new Date());
-  const todaysPatients = allPatients.filter(p => p.date === todayStr);
-  document.getElementById("tokenNo").value = todaysPatients.length + 1;
+  const todaysTokens = allPatients
+    .filter(p => p.date === todayStr && p.token_no)
+    .map(p => parseInt(p.token_no));
+    
+  let nextToken = todaysTokens.length > 0 ? Math.max(...todaysTokens) + 1 : 1;
+  document.getElementById("tokenNo").value = nextToken;
 
   if (allPatients.length === 0) {
     document.getElementById("searchPatientId").value = "1";
@@ -1468,10 +1653,49 @@ function handleObservationChange() {
 function handleLeftClinicChange() {
   const isLeft = document.getElementById("leftClinic").checked;
   const isObs = document.getElementById("underObservation");
+  const leftWithout = document.getElementById("leftWithoutCheckup");
   
-  if (isLeft && isObs && isObs.checked) {
-    isObs.checked = false;
-    handleObservationChange(); // Trigger logic to enable payment fields
+  if (isLeft) {
+    if (isObs && isObs.checked) {
+      isObs.checked = false;
+      handleObservationChange(); // Trigger logic to enable payment fields
+    }
+    if (leftWithout && leftWithout.checked) {
+      leftWithout.checked = false;
+      handleLeftWithoutCheckupChange(); // Re-enable fields that were disabled
+    }
+  }
+}
+
+// Handle Left Without Checkup checkbox change
+function handleLeftWithoutCheckupChange() {
+  const isLeftWithout = document.getElementById("leftWithoutCheckup").checked;
+  if (isLeftWithout) {
+    // Uncheck other conflicting boxes
+    const obsCheckbox = document.getElementById("underObservation");
+    if (obsCheckbox && obsCheckbox.checked) {
+      obsCheckbox.checked = false;
+      handleObservationChange();
+    }
+    const leftClinicCheckbox = document.getElementById("leftClinic");
+    if (leftClinicCheckbox) leftClinicCheckbox.checked = false;
+    
+    // Do not clear the visit type so we know which visit was aborted
+    // document.getElementById("visit").value = "";
+    
+    // Set Fees to 0 for this specific entry (since they are leaving)
+    // Actually if they are leaving without checkup, they might have already paid or are taking a refund. 
+    // Usually we just mark fee=0 and paid=0 for the abort action so it balances to 0.
+    document.getElementById("fee").value = "0";
+    document.getElementById("paid").value = "0";
+    document.getElementById("paid").disabled = true;
+    
+    calculateBalance();
+  } else {
+    // We don't force 'Visit 1' here because it might be a Visit 2 that we un-aborted.
+    // Instead we just re-enable the paid field.
+    document.getElementById("paid").disabled = false;
+    calculateBalance();
   }
 }
 
@@ -1594,15 +1818,34 @@ function editPatient(patientId, checkupId, visit) {
     document.getElementById("isExtraVisit").checked = false;
   }
   
-  if (p.status === "Under Observation") {
+  const pStatusClean = String(p.status || "").replace(/\s*\((Good|Bad)\)$/, "").trim();
+  if (pStatusClean === "Under Observation") {
     document.getElementById("underObservation").checked = true;
     document.getElementById("leftClinic").checked = false;
-  } else if (p.status === "Left Clinic") {
+    if (document.getElementById("leftWithoutCheckup")) document.getElementById("leftWithoutCheckup").checked = false;
+  } else if (pStatusClean === "Left Clinic") {
     document.getElementById("underObservation").checked = false;
     document.getElementById("leftClinic").checked = true;
+    if (document.getElementById("leftWithoutCheckup")) document.getElementById("leftWithoutCheckup").checked = false;
+  } else if (pStatusClean === "Left Without Checkup") {
+    document.getElementById("underObservation").checked = false;
+    document.getElementById("leftClinic").checked = false;
+    if (document.getElementById("leftWithoutCheckup")) document.getElementById("leftWithoutCheckup").checked = true;
   } else {
     document.getElementById("underObservation").checked = false;
     document.getElementById("leftClinic").checked = false;
+    if (document.getElementById("leftWithoutCheckup")) document.getElementById("leftWithoutCheckup").checked = false;
+  }
+  
+  if (document.getElementById("patientBehavior")) {
+    // Extract behavior from status string e.g. "Left Clinic (Bad)" → "Bad"
+    const statusStr = String(p.status || "");
+    const behMatch = statusStr.match(/\((Good|Bad)\)$/);
+    const extractedBehavior = behMatch ? behMatch[1] : "";
+    document.getElementById("patientBehavior").value = extractedBehavior;
+    if (typeof updateBehaviorDropdownColor === "function") {
+      updateBehaviorDropdownColor();
+    }
   }
   handleObservationChange();
   calculateBalance();
@@ -2548,3 +2791,20 @@ async function deleteSelectedRows() {
     fetchPatients();
   });
 }
+
+// --- Internet Connection Monitor ---
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+
+function updateOnlineStatus() {
+  const banner = document.getElementById("offlineBanner");
+  if (!banner) return;
+  if (navigator.onLine) {
+    banner.style.display = "none";
+  } else {
+    banner.style.display = "block";
+  }
+}
+
+// Initial check on load
+document.addEventListener("DOMContentLoaded", updateOnlineStatus);
