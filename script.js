@@ -264,6 +264,41 @@ function renderObservationList(data) {
   }
 
   const targetDateStr = dateFilterEl ? dateFilterEl.value : formatDate(new Date());
+
+  // Populate doctor filter dropdown dynamically
+  const obsDoctorFilterEl = document.getElementById("obsDoctorFilter");
+  if (obsDoctorFilterEl) {
+    const currentDocFilter = obsDoctorFilterEl.value;
+    const doctorsOnDate = [...new Set(
+      data
+        .filter(p => {
+          if (!p.checkup_id || String(p.checkup_id).trim() === "") return false;
+          let pDateStr = p.date;
+          if (p.date) {
+            const parsedDate = new Date(p.date);
+            if (!isNaN(parsedDate)) pDateStr = formatDate(parsedDate);
+          }
+          return pDateStr === targetDateStr && p.doctor && p.doctor.trim() !== "";
+        })
+        .map(p => p.doctor.trim())
+    )].sort();
+    
+    obsDoctorFilterEl.innerHTML = `<option value="">All Doctors</option>`;
+    doctorsOnDate.forEach(doc => {
+      const opt = document.createElement("option");
+      opt.value = doc;
+      opt.textContent = doc;
+      if (doc === currentDocFilter) opt.selected = true;
+      obsDoctorFilterEl.appendChild(opt);
+    });
+    // Restore filter value if it still exists
+    if (currentDocFilter && doctorsOnDate.includes(currentDocFilter)) {
+      obsDoctorFilterEl.value = currentDocFilter;
+    }
+  }
+
+  const selectedDoctorFilter = obsDoctorFilterEl ? obsDoctorFilterEl.value.trim() : "";
+
   // Show all patients for the selected date, robustly parsing date
   const obsPatients = data.filter(p => {
     // Exclude empty rows, doctor settlements, or direct patient tally payments (which lack checkup_id/token_no)
@@ -276,11 +311,22 @@ function renderObservationList(data) {
         pDateStr = formatDate(parsedDate);
       }
     }
-    return pDateStr === targetDateStr;
+    if (pDateStr !== targetDateStr) return false;
+
+    // Apply doctor filter
+    if (selectedDoctorFilter !== "") {
+      if ((p.doctor || "").trim() !== selectedDoctorFilter) return false;
+    }
+
+    return true;
   });
 
-  // Sort by Token Number (Ascending: 1, 2, 3...)
+  // Sort: first by doctor name, then by token number within each doctor
   obsPatients.sort((a, b) => {
+    const docA = (a.doctor || "").trim().toLowerCase();
+    const docB = (b.doctor || "").trim().toLowerCase();
+    if (docA < docB) return -1;
+    if (docA > docB) return 1;
     const t1 = parseInt(a.token_no) || 999999;
     const t2 = parseInt(b.token_no) || 999999;
     return t1 - t2;
@@ -318,6 +364,7 @@ function renderObservationList(data) {
   }
 
   let html = "";
+  let lastDoctor = null;
   finalObsPatients.forEach((p, index) => {
     const bal = parseFloat(p.balance) || 0;
     const isPending = bal > 0;
@@ -338,6 +385,20 @@ function renderObservationList(data) {
     
     let rowStyle = (obsCleanStatus === "Left Clinic") ? "background-color: #bbf7d0;" : "";
     if (obsBehavior === "Bad") rowStyle = "background-color: #fee2e2;";
+
+    // Insert a doctor separator row when doctor changes (only when showing all doctors)
+    const currentDoctor = (p.doctor || "").trim();
+    if (selectedDoctorFilter === "" && currentDoctor !== lastDoctor) {
+      const docColor = getDoctorColor(currentDoctor);
+      html += `
+        <tr>
+          <td colspan="13" style="background: ${docColor.bg}; color: ${docColor.text}; font-weight: 900; font-size: 13px; padding: 6px 14px; border-top: 2px solid ${docColor.border}; border-bottom: 2px solid ${docColor.border}; letter-spacing: 0.5px;">
+            <i class="fas fa-user-md" style="margin-right: 6px;"></i>${currentDoctor || 'Unknown Doctor'} — Patients
+          </td>
+        </tr>
+      `;
+      lastDoctor = currentDoctor;
+    }
     
     html += `
       <tr style="${rowStyle}">
@@ -371,6 +432,22 @@ function renderObservationList(data) {
     `;
   });
   listEl.innerHTML = html;
+}
+
+// Helper: Assign a color theme per doctor name consistently
+function getDoctorColor(doctorName) {
+  const colors = [
+    { bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe" },
+    { bg: "#fdf4ff", text: "#7e22ce", border: "#e9d5ff" },
+    { bg: "#fff7ed", text: "#c2410c", border: "#fed7aa" },
+    { bg: "#f0fdf4", text: "#15803d", border: "#bbf7d0" },
+    { bg: "#fef2f2", text: "#b91c1c", border: "#fecaca" },
+    { bg: "#f0fdfa", text: "#0f766e", border: "#99f6e4" },
+  ];
+  if (!doctorName) return colors[0];
+  let hash = 0;
+  for (let i = 0; i < doctorName.length; i++) hash = doctorName.charCodeAt(i) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
 }
 
 function toggleSettings() {
@@ -1115,15 +1192,18 @@ async function addPatient() {
   const origChk = document.getElementById("originalCheckupId").value || finalCheckupId;
   const origVis = document.getElementById("originalVisit").value || currentVisit;
 
-  // Calculate Daily Token Number
+  // Calculate Daily Token Number — per doctor per day
   let finalTokenNo = document.getElementById("tokenNo").value || "";
   if (formMode === "add") {
     const todayStr = formatDate(new Date());
-    const todaysTokens = allPatients
-      .filter(p => p.date === todayStr && p.token_no && !isNaN(parseInt(p.token_no)))
+    const selectedDoctor = document.getElementById("doctor").value || "";
+    
+    // Get all tokens for today for the SAME doctor only
+    const doctorTodaysTokens = allPatients
+      .filter(p => p.date === todayStr && p.doctor === selectedDoctor && p.token_no && !isNaN(parseInt(p.token_no)))
       .map(p => parseInt(p.token_no));
       
-    let nextToken = todaysTokens.length > 0 ? Math.max(...todaysTokens) + 1 : 1;
+    let nextToken = doctorTodaysTokens.length > 0 ? Math.max(...doctorTodaysTokens) + 1 : 1;
     finalTokenNo = nextToken;
     document.getElementById("tokenNo").value = finalTokenNo;
   }
