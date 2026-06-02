@@ -2563,10 +2563,14 @@ window.printReceipt = function() {
   const printArea = document.getElementById('printArea');
   if (!printArea) return;
 
-  const receiptCard = document.getElementById("receiptCard") || document.querySelector("div[style*='flex: 1 1 30%']"); // Using the closest unique wrapper
+  const receiptCard = document.getElementById("receiptCard");
+  if (!receiptCard) return;
   
   // Replace input with a div showing the same value for better printing
   const clone = receiptCard.cloneNode(true);
+  
+  const rcptNotesDiv = clone.querySelector('#rcptNotes');
+  if (rcptNotesDiv && rcptNotesDiv.parentElement) rcptNotesDiv.parentElement.parentElement.remove();
   
   const input = clone.querySelector('#rcptPaidByShehjar');
   if (input) {
@@ -2656,7 +2660,10 @@ window.renderPatientTally = function() {
       tr.innerHTML = `
         <td>${p.date}</td>
         <td><strong>${p.name}</strong> <span style="color:#64748b; font-size:11px;">(#${p.patient_id})</span></td>
-        <td>${p.visit} <span style="color:#64748b; font-size:11px;">(Chk: ${p.checkup_id})</span></td>
+        <td>
+          ${p.visit} <span style="color:#64748b; font-size:11px;">(Chk: ${p.checkup_id})</span>
+          ${p.notes ? `<br><span style="color:#059669; font-size:10.5px; font-style:italic;"><i class="fas fa-sticky-note"></i> ${p.notes}</span>` : ''}
+        </td>
         <td>${p.doctor || '-'}</td>
         <td style="color:#0284c7;">₹ ${drFee}</td>
         <td style="color:#16a34a;">₹ ${paidDrFee}</td>
@@ -2723,6 +2730,7 @@ function updatePatientInvoiceUI(patient, patientRecords) {
     
     document.getElementById("invPaidByLabel").innerHTML = `PAID BY <span style="color:#2563eb;">--</span><br>ON <span style="color:#2563eb;">--/--/----</span>`;
     document.getElementById("invPaidToday").value = "";
+    document.getElementById("ptInvoiceNotes").value = "";
     document.getElementById("invPaidToday").disabled = true;
     document.getElementById("btnSavePatientPayment").disabled = true;
     return;
@@ -2795,6 +2803,7 @@ function updatePatientInvoiceUI(patient, patientRecords) {
 
   document.getElementById("invPaidToday").disabled = false;
   document.getElementById("invPaidToday").value = sumPaidToday > 0 ? sumPaidToday : "";
+  document.getElementById("ptInvoiceNotes").value = "";
   document.getElementById("invPaidToday").dataset.savedSum = sumPaidToday;
   
   document.getElementById("btnSavePatientPayment").disabled = false;
@@ -2905,6 +2914,8 @@ window.savePatientPayment = async function() {
   const btn = document.getElementById("btnSavePatientPayment");
   btn.disabled = true;
   btn.innerText = "Saving...";
+  
+  const notesStr = document.getElementById("ptInvoiceNotes").value.trim() || "";
 
   const patientData = {
     patient_id: patient.patient_id,
@@ -2918,6 +2929,7 @@ window.savePatientPayment = async function() {
     paid: 0,
     balance: 0,
     status: "Pending",
+    notes: notesStr,
     duration: "",
     action: "add",
     original_checkup_id: "",
@@ -2964,10 +2976,13 @@ window.printPatientInvoice = function() {
   const printArea = document.getElementById('printArea');
   if (!printArea) return;
 
-  const invoiceCard = document.querySelector("#patientsTallyTab .tally-right");
+  const invoiceCard = document.getElementById("patientInvoiceCard");
   if (!invoiceCard) return;
   
   const clone = invoiceCard.cloneNode(true);
+  
+  const ptInvoiceNotesDiv = clone.querySelector('#ptInvoiceNotes');
+  if (ptInvoiceNotesDiv && ptInvoiceNotesDiv.parentElement) ptInvoiceNotesDiv.parentElement.remove();
   
   // Replace inputs with divs
   const inputs = clone.querySelectorAll('input');
@@ -3097,7 +3112,7 @@ window.renderBalanceSheet = function() {
   let html = "";
   pendingPatients.forEach(p => {
     html += `
-      <tr style="border-bottom: 1px solid #e2e8f0; transition: background 0.2s;">
+      <tr onclick="loadInvoiceFromBalance('${p.id}', '${p.name.replace(/'/g, "\\'")}')" style="border-bottom: 1px solid #e2e8f0; transition: background 0.2s; cursor: pointer;" onmouseover="this.style.background='#f0fdfa'" onmouseout="this.style.background='transparent'">
         <td style="padding: 12px; font-weight: bold; color: #334155;">${p.name}</td>
         <td style="padding: 12px; color: #64748b;">#${p.id}</td>
         <td style="padding: 12px; color: #64748b;">${p.phone}</td>
@@ -3107,6 +3122,138 @@ window.renderBalanceSheet = function() {
     `;
   });
   tbody.innerHTML = html;
+}
+
+window.loadInvoiceFromBalance = function(patientId, patientName) {
+  // Set the search filter and trigger the patient tally render to update the receipt
+  document.getElementById("ptFilterPatient").value = `${patientName} (#${patientId})`;
+  renderPatientTally();
+}
+
+window.showPendingBalancePopup = function(filterDate) {
+  const modal = document.getElementById("pendingBalanceModal");
+  const tbody = document.getElementById("popupPendingTableBody");
+  const emptyMsg = document.getElementById("popupPendingEmpty");
+  const modalContent = document.getElementById("pendingBalanceModalContent");
+  
+  if (!modal || !tbody || !emptyMsg) return;
+
+  if (filterDate === undefined) {
+    filterDate = formatDate(new Date());
+  }
+
+  const dateInput = document.getElementById("popupDateFilter");
+  if (dateInput) {
+    if (filterDate === 'ALL') dateInput.value = "";
+    else dateInput.value = filterDate;
+  }
+  
+  const dateLabel = document.getElementById("popupDateLabel");
+  if (dateLabel) {
+    if (filterDate === 'ALL') dateLabel.innerText = "Overall";
+    else if (filterDate === formatDate(new Date())) dateLabel.innerText = "Today's";
+    else dateLabel.innerText = filterDate + " ";
+  }
+
+  const patientMap = new Map();
+  const transactionsToProcess = filterDate === 'ALL' ? allPatients : allPatients.filter(p => p.date === filterDate);
+
+  transactionsToProcess.forEach(p => {
+    if (!p.patient_id) return;
+    const id = String(p.patient_id);
+    
+    const fee = parseFloat(p.fee) || 0;
+    const paid = parseFloat(p.paid) || 0;
+    const medFee = parseFloat(p.medicine_fee) || 0;
+    const medPaid = parseFloat(p.medicine_paid) || 0;
+
+    if (!patientMap.has(id)) {
+      patientMap.set(id, {
+        name: p.name || 'Unknown',
+        id: id,
+        phone: p.phone || 'N/A',
+        address: p.address || 'N/A',
+        totalFee: 0,
+        totalPaid: 0,
+        totalMedFee: 0,
+        totalMedPaid: 0
+      });
+    }
+    
+    const record = patientMap.get(id);
+    record.totalFee += fee;
+    record.totalPaid += paid;
+    record.totalMedFee += medFee;
+    record.totalMedPaid += medPaid;
+  });
+
+  const pendingPatients = [];
+  let grandTotalPending = 0;
+
+  for (const [id, record] of patientMap.entries()) {
+    const totalPending = (record.totalFee + record.totalMedFee) - (record.totalPaid + record.totalMedPaid);
+    if (totalPending > 0) {
+      record.totalPending = totalPending;
+      pendingPatients.push(record);
+      grandTotalPending += totalPending;
+    }
+  }
+
+  pendingPatients.sort((a, b) => b.totalPending - a.totalPending);
+
+  const totalPendingValue = document.getElementById("popupTotalPendingValue");
+  const patientCount = document.getElementById("popupPatientCount");
+  if (totalPendingValue) totalPendingValue.innerText = `₹ ${grandTotalPending}`;
+  if (patientCount) patientCount.innerText = `(${pendingPatients.length} patients)`;
+
+  if (pendingPatients.length === 0) {
+    tbody.innerHTML = "";
+    tbody.style.display = "none";
+    emptyMsg.style.display = "block";
+  } else {
+    emptyMsg.style.display = "none";
+    tbody.style.display = "flex";
+    let html = "";
+    pendingPatients.forEach(p => {
+      html += `
+        <div onclick="loadInvoiceAndClosePopup('${p.id}', '${p.name.replace(/'/g, "\\'")}')" style="display: flex; align-items: center; padding: 12px 15px; border-bottom: 1px solid #e2e8f0; transition: background 0.2s; cursor: pointer;" onmouseover="this.style.background='#fff7ed'" onmouseout="this.style.background='transparent'">
+          <div style="flex: 2; font-weight: bold; color: #334155;">${p.name} <span style="color:#94a3b8; font-weight:normal; font-size:11px;">(#${p.id})</span></div>
+          <div style="flex: 1.5; color: #64748b; font-size: 13px;">${p.phone}</div>
+          <div style="flex: 2; color: #64748b; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 10px;">${p.address}</div>
+          <div style="flex: 1.5; text-align: right; display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding-right: 20px;">
+            <span style="font-weight: 800; color: #ea580c; font-size: 14px;">₹ ${p.totalPending}</span>
+            <i class="fas fa-chevron-right" style="color: #cbd5e1; font-size: 12px; transition: color 0.2s, transform 0.2s;" onmouseover="this.style.color='#ea580c'; this.style.transform='translateX(3px)';" onmouseout="this.style.color='#cbd5e1'; this.style.transform='none';"></i>
+          </div>
+        </div>
+      `;
+    });
+    tbody.innerHTML = html;
+  }
+
+  modal.style.display = "flex";
+  setTimeout(() => {
+    modal.style.opacity = "1";
+    modalContent.style.transform = "translateY(0)";
+  }, 10);
+}
+
+window.closePendingBalancePopup = function() {
+  const modal = document.getElementById("pendingBalanceModal");
+  const modalContent = document.getElementById("pendingBalanceModalContent");
+  if (!modal) return;
+  modal.style.opacity = "0";
+  modalContent.style.transform = "translateY(-20px)";
+  setTimeout(() => {
+    modal.style.display = "none";
+  }, 300);
+}
+
+window.loadInvoiceAndClosePopup = function(patientId, patientName) {
+  closePendingBalancePopup();
+  // Make sure we switch to the Patients Tally section to see the invoice
+  const ptTabBtn = Array.from(document.querySelectorAll('.tabs-nav .tab-btn')).find(btn => btn.innerText.includes("Patients Tally"));
+  if(ptTabBtn) switchTab('patientsTallyTab', ptTabBtn);
+  loadInvoiceFromBalance(patientId, patientName);
 }
 
 // --- Internet Connection Monitor ---
