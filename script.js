@@ -1,6 +1,10 @@
 // CONFIGURATION
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyZOt2ZHv8l8klWoK0K1vwVYqjshnwf6AugehhI4RXLTx_FHM8h9Los1QcGNAt35Das/exec"; // Apni API URL yahan dalein
-const APP_PASSWORD = "shehjaar123";
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz9Yv4xD7rojugffj6iclfeM3xTqds4p__hH3PIUDF8SQX8y1sD-mEIePytWlBk2G8X/exec";
+// NOTE: Password is verified server-side only — never stored in this file.
+
+// Simple brute-force protection (client-side aid)
+let _loginAttempts = 0;
+let _loginLockedUntil = 0;
 
 let allPatients = [];
 let isPreviewMode = true; // true = Patient ID field shows next auto-generated preview ID
@@ -169,13 +173,50 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-function checkLogin() {
-  const passwordInput = document.getElementById("loginPassword").value;
-  if (passwordInput === APP_PASSWORD) {
-    sessionStorage.setItem("isLoggedIn", "true");
-    showApp();
-  } else {
+async function checkLogin() {
+  const now = Date.now();
+  
+  // Brute-force lockout check
+  if (_loginLockedUntil > now) {
+    const secsLeft = Math.ceil((_loginLockedUntil - now) / 1000);
     document.getElementById("loginError").style.display = "block";
+    document.getElementById("loginError").innerText = `⏳ Too many attempts. Wait ${secsLeft} seconds.`;
+    return;
+  }
+
+  const passwordInput = document.getElementById("loginPassword").value.trim();
+  if (!passwordInput) return;
+
+  // Show loading state
+  const loginBtn = document.querySelector('#loginOverlay .btn-primary');
+  const originalText = loginBtn ? loginBtn.innerText : '';
+  if (loginBtn) { loginBtn.innerText = '🔐 Verifying...'; loginBtn.disabled = true; }
+  document.getElementById("loginError").style.display = "none";
+
+  try {
+    // Send password to server for verification — password never stored in this file
+    const response = await fetch(`${WEB_APP_URL}?action=verifyPassword&pwd=${encodeURIComponent(passwordInput)}`);
+    const result = await response.json();
+
+    if (result.success === true) {
+      _loginAttempts = 0;
+      sessionStorage.setItem("isLoggedIn", "true");
+      showApp();
+    } else {
+      _loginAttempts++;
+      if (_loginAttempts >= 5) {
+        _loginLockedUntil = Date.now() + 30000; // Lock for 30 seconds
+        _loginAttempts = 0;
+      }
+      document.getElementById("loginError").style.display = "block";
+      document.getElementById("loginError").innerText = '❌ Incorrect Password';
+    }
+  } catch (err) {
+    // Fallback: if server unreachable, block login (security > convenience)
+    document.getElementById("loginError").style.display = "block";
+    document.getElementById("loginError").innerText = '⚠️ Cannot verify. Check internet connection.';
+  } finally {
+    if (loginBtn) { loginBtn.innerText = originalText; loginBtn.disabled = false; }
   }
 }
 
@@ -749,7 +790,29 @@ function checkPatientBehavior() {
 function handleAnotherClinicChange() {
   const isAnother = document.getElementById("fromAnotherClinic").checked;
   const isExtra = document.getElementById("isExtraVisit");
-  
+  const isLeftWithout = document.getElementById("leftWithoutCheckup")?.checked;
+
+  if (isAnother) {
+    // Extra Visit checkbox uncheck karo agar checked ho
+    if (isExtra && isExtra.checked) {
+      isExtra.checked = false;
+      handleExtraVisitCheckbox(); // cleanup extra visit state
+    }
+  }
+
+  // Agar Left w/o Treatment checked hai to visit type update karo
+  if (isLeftWithout) {
+    const visitInput = document.getElementById("visit");
+    if (isAnother) {
+      visitInput.value = "Patient from Another Clinic - Left Without Checkup";
+    } else {
+      visitInput.value = "Left Clinic Without Treatment";
+    }
+    visitInput.title = visitInput.value;
+    calculateBalance();
+    return;
+  }
+
   if (isExtra && isExtra.checked) {
     // If Extra Visit is also checked, let it handle the naming logic
     handleExtraVisitCheckbox();
@@ -762,7 +825,7 @@ function handleAnotherClinicChange() {
       visitInput.value = "Patient from Another Clinic - Visit 2";
       feeInput.value = 0;
     } else {
-      if (visitInput.value === "Patient from Another Clinic - Visit 2" || visitInput.value.includes("Patient from Another Clinic - Extra Visit")) {
+      if (visitInput.value === "Patient from Another Clinic - Visit 2" || visitInput.value.includes("Patient from Another Clinic - Extra Visit") || visitInput.value.includes("Patient from Another Clinic - Left Without Checkup")) {
         visitInput.value = "Visit 1";
         feeInput.value = defaultFee;
       }
@@ -869,6 +932,7 @@ function handleExtraVisitCheckbox() {
   } else {
     // Unchecked: restore normal state
     paidInput.disabled = false;
+    paidInput.value = "";
     hintEl.style.display = "none";
     
     const mode = document.getElementById("formMode").value;
@@ -877,11 +941,32 @@ function handleExtraVisitCheckbox() {
     const origVis = document.getElementById("originalVisit").value;
 
     if (mode === "update" && origChk && origVis) {
-      // Re-trigger edit mode to correctly restore the original values being edited
-      editPatient(patientId, origChk, origVis);
-      return; // editPatient calls calculateBalance internally
+      // ✅ FIX: Agar original visit khud hi Extra Visit thi,
+      // to editPatient() dobara call karne se checkbox wapas check ho jata tha (infinite loop).
+      // Is case mein sirf UI restore karo, editPatient() mat bulao.
+      const origVisWasExtra = String(origVis).toLowerCase().includes("extra visit");
+
+      if (origVisWasExtra) {
+        // Original record extra visit tha — sirf Visit type ko editable chhodo
+        // User khud type kar sakta hai jo chahiye
+        visitInput.value = origVis; // Show original name
+        visitInput.title = origVis;
+        document.getElementById("activeCheckupId").value = origChk;
+        document.getElementById("displayCheckupId").value = origChk;
+        // Fee restore karo (0 se jo bhi default ho)
+        document.getElementById("fee").value = 0;
+        calculateBalance();
+      } else {
+        // Original visit normal thi — editPatient se restore karo
+        visitInput.value = origVis;
+        visitInput.title = origVis;
+        document.getElementById("activeCheckupId").value = origChk;
+        document.getElementById("displayCheckupId").value = origChk;
+        editPatient(patientId, origChk, origVis);
+        return; // editPatient calls calculateBalance internally
+      }
     } else {
-      // If it was a new entry, re-trigger ID input logic
+      // Naya entry tha — ID input logic se reset karo
       handleIdInput();
     }
   }
@@ -1754,7 +1839,7 @@ function handleLeftWithoutCheckupChange() {
   const paidInput = document.getElementById("paid");
   
   if (isLeftWithout) {
-    // Uncheck other conflicting boxes
+    // Uncheck conflicting checkboxes
     const obsCheckbox = document.getElementById("underObservation");
     if (obsCheckbox && obsCheckbox.checked) {
       obsCheckbox.checked = false;
@@ -1762,22 +1847,36 @@ function handleLeftWithoutCheckupChange() {
     }
     const leftClinicCheckbox = document.getElementById("leftClinic");
     if (leftClinicCheckbox) leftClinicCheckbox.checked = false;
-    
-    // Store original visit type if not already stored, then change it
-    if (visitInput.value !== "Left Clinic Without Treatment") {
+
+    // Extra Visit checkbox bhi uncheck karo
+    const extraVisitCheckbox = document.getElementById("isExtraVisit");
+    if (extraVisitCheckbox && extraVisitCheckbox.checked) {
+      extraVisitCheckbox.checked = false;
+      handleExtraVisitCheckbox(); // cleanup paid field etc.
+    }
+
+    // Store original visit type
+    if (visitInput.value !== "Left Clinic Without Treatment" && !visitInput.value.includes("Left Without Checkup")) {
       visitInput.dataset.originalVisit = visitInput.value;
     }
-    visitInput.value = "Left Clinic Without Treatment";
-    
+
+    // Agar Another Clinic bhi checked hai, to combined visit type set karo
+    const isAnotherClinic = document.getElementById("fromAnotherClinic")?.checked;
+    if (isAnotherClinic) {
+      visitInput.value = "Patient from Another Clinic - Left Without Checkup";
+    } else {
+      visitInput.value = "Left Clinic Without Treatment";
+    }
+
     // Store original fee and paid
     if (!feeInput.dataset.originalFee) feeInput.dataset.originalFee = feeInput.value;
     if (!paidInput.dataset.originalPaid) paidInput.dataset.originalPaid = paidInput.value;
-    
-    // Set Fees to 0 for this specific entry (since they are leaving)
+
+    // Set Fees to 0
     feeInput.value = "0";
     paidInput.value = "0";
     paidInput.disabled = true;
-    
+
     calculateBalance();
   } else {
     // Restore visit type if it was saved
@@ -1924,9 +2023,12 @@ function editPatient(patientId, checkupId, visit) {
   if (p.visit.toLowerCase().includes("extra visit")) {
     document.getElementById("isExtraVisit").checked = true;
     document.getElementById("displayCheckupId").value = p.checkup_id + " ✚";
+    // Disable paid field for extra visits (fee refunded)
     document.getElementById("paid").disabled = true;
+    document.getElementById("paid").value = "";
   } else {
     document.getElementById("isExtraVisit").checked = false;
+    document.getElementById("paid").disabled = false; // Make sure paid is enabled
   }
   
   const pStatusClean = String(p.status || "").replace(/\s*\((Good|Bad)\)$/, "").trim();
