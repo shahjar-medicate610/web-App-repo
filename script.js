@@ -999,6 +999,9 @@ function handleIdInput() {
     isPreviewMode = false;
     applyPatientHistory(history[0]);
   } else {
+    // ID not found - clear form to prevent showing old patient's data
+    clearForm(true); // keepId = true (don't clear the search box itself)
+    // Set up new patient state
     isPreviewMode = false;
     document.getElementById("activePatientId").value = inputId;
     document.getElementById("activeCheckupId").value = "";
@@ -1008,11 +1011,6 @@ function handleIdInput() {
     document.getElementById("prevBal").value = 0;
     document.getElementById("fee").value = localStorage.getItem("defaultFee") || "300";
     document.getElementById("validUpto").value = calculateExpiryDate(parseInt(localStorage.getItem("validityDays") || "15"));
-    document.getElementById("balanceAlert").style.display = "none";
-    const advanceAlert = document.getElementById("advanceAlert");
-    if (advanceAlert) advanceAlert.style.display = "none";
-    const extraVisitAlertElse = document.getElementById("extraVisitAlert");
-    if (extraVisitAlertElse) extraVisitAlertElse.style.display = "none";
     showPatientBadge("new");
   }
   calculateBalance();
@@ -1375,7 +1373,7 @@ async function addPatient() {
     await fetchPatients();
     
     setTimeout(() => {
-      clearForm(true);
+      clearForm(false);
       document.getElementById("btnText").style.display = "block";
       document.getElementById("btnLoader").style.display = "none";
       const submitBtn = document.getElementById("submitBtn");
@@ -1548,9 +1546,15 @@ function nextPage() {
 }
 
 function clearForm(keepId = false) {
+  const searchInput = document.getElementById("searchPatientId");
+  const currentSearchValue = searchInput.value;
+
   document.getElementById("patientForm").reset();
-  if (!keepId) {
-    document.getElementById("searchPatientId").value = "";
+
+  if (keepId) {
+    searchInput.value = currentSearchValue;
+  } else {
+    searchInput.value = "";
   }
   document.getElementById("formMode").value = "add";
   document.getElementById("btnText").innerText = "Save Entry";
@@ -1621,7 +1625,16 @@ function clearForm(keepId = false) {
   }
 
   // Show preview IDs for next new patient entry
-  refreshPreviewIds();
+  if (!keepId) {
+    refreshPreviewIds();
+  } else {
+    // Only refresh Token No since we are keeping the manually typed Patient ID
+    const todayStr = formatDate(new Date());
+    const todaysTokens = allPatients
+      .filter(p => p.date === todayStr && p.token_no)
+      .map(p => parseInt(p.token_no));
+    document.getElementById("tokenNo").value = todaysTokens.length > 0 ? Math.max(...todaysTokens) + 1 : 1;
+  }
 }
 
 function updateDatalist() {
@@ -2100,6 +2113,27 @@ async function switchTab(tabId, btnElement) {
   // If opening Patient Tally tab, render it
   if (tabId === 'patientsTallyTab') {
     renderPatientTally();
+    renderBalanceSheet();
+  }
+  
+}
+
+window.switchPatientTallyTab = function(tab) {
+  if (tab === 'statement') {
+    document.getElementById('ptStatementContainer').style.display = 'block';
+    document.getElementById('ptBalanceSheetContainer').style.display = 'none';
+    document.getElementById('ptTabStatement').style.background = '#c026d3';
+    document.getElementById('ptTabStatement').style.color = 'white';
+    document.getElementById('ptTabBalanceSheet').style.background = '#e2e8f0';
+    document.getElementById('ptTabBalanceSheet').style.color = '#475569';
+  } else {
+    document.getElementById('ptStatementContainer').style.display = 'none';
+    document.getElementById('ptBalanceSheetContainer').style.display = 'block';
+    document.getElementById('ptTabStatement').style.background = '#e2e8f0';
+    document.getElementById('ptTabStatement').style.color = '#475569';
+    document.getElementById('ptTabBalanceSheet').style.background = '#0ea5e9';
+    document.getElementById('ptTabBalanceSheet').style.color = 'white';
+    renderBalanceSheet();
   }
 }
 
@@ -3003,6 +3037,76 @@ async function deleteSelectedRows() {
     alert("Some records could not be deleted. Please check your connection.");
     fetchPatients();
   });
+}
+
+window.renderBalanceSheet = function() {
+  const tbody = document.getElementById("ptBalanceSheetTableBody");
+  const emptyMsg = document.getElementById("ptBalanceSheetEmpty");
+  
+  if (!tbody || !emptyMsg) return;
+
+  const patientMap = new Map();
+
+  allPatients.forEach(p => {
+    if (!p.patient_id) return;
+    const id = String(p.patient_id);
+    
+    const fee = parseFloat(p.fee) || 0;
+    const paid = parseFloat(p.paid) || 0;
+    const medFee = parseFloat(p.medicine_fee) || 0;
+    const medPaid = parseFloat(p.medicine_paid) || 0;
+
+    if (!patientMap.has(id)) {
+      patientMap.set(id, {
+        name: p.name || 'Unknown',
+        id: id,
+        phone: p.phone || 'N/A',
+        address: p.address || 'N/A',
+        totalFee: 0,
+        totalPaid: 0,
+        totalMedFee: 0,
+        totalMedPaid: 0
+      });
+    }
+    
+    const record = patientMap.get(id);
+    record.totalFee += fee;
+    record.totalPaid += paid;
+    record.totalMedFee += medFee;
+    record.totalMedPaid += medPaid;
+  });
+
+  const pendingPatients = [];
+  for (const [id, record] of patientMap.entries()) {
+    const totalPending = (record.totalFee + record.totalMedFee) - (record.totalPaid + record.totalMedPaid);
+    if (totalPending > 0) {
+      record.totalPending = totalPending;
+      pendingPatients.push(record);
+    }
+  }
+
+  pendingPatients.sort((a, b) => b.totalPending - a.totalPending);
+
+  if (pendingPatients.length === 0) {
+    tbody.innerHTML = "";
+    emptyMsg.style.display = "block";
+    return;
+  }
+
+  emptyMsg.style.display = "none";
+  let html = "";
+  pendingPatients.forEach(p => {
+    html += `
+      <tr style="border-bottom: 1px solid #e2e8f0; transition: background 0.2s;">
+        <td style="padding: 12px; font-weight: bold; color: #334155;">${p.name}</td>
+        <td style="padding: 12px; color: #64748b;">#${p.id}</td>
+        <td style="padding: 12px; color: #64748b;">${p.phone}</td>
+        <td style="padding: 12px; color: #64748b;">${p.address}</td>
+        <td style="padding: 12px; font-weight: bold; color: #dc2626; text-align: right; font-size: 15px;">₹ ${p.totalPending}</td>
+      </tr>
+    `;
+  });
+  tbody.innerHTML = html;
 }
 
 // --- Internet Connection Monitor ---
