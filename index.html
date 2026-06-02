@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Shehjaar Medicate | Advanced Management</title>
+  <title>Shehjar Medicate | Advanced Management</title>
 
   <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json">
@@ -28,11 +28,14 @@
 </head>
 
 <body>
-  <div id="offlineBanner" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 99999; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px);">
-    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ef4444; color: white; padding: 30px 40px; border-radius: 12px; text-align: center; width: 90%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+  <div id="offlineBanner"
+    style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 99999; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px);">
+    <div
+      style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ef4444; color: white; padding: 30px 40px; border-radius: 12px; text-align: center; width: 90%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
       <i class="fas fa-wifi" style="font-size: 48px; margin-bottom: 15px;"></i>
       <h2 style="margin: 0 0 15px 0; font-size: 24px;">No Internet Connection</h2>
-      <p style="margin: 0; font-size: 16px; line-height: 1.5; font-weight: 500;">Please connect to the internet to continue.<br><br>Offline entries are blocked to prevent data sync errors and token number duplication.</p>
+      <p style="margin: 0; font-size: 16px; line-height: 1.5; font-weight: 500;">Please connect to the internet to
+        continue.<br><br>Offline entries are blocked to prevent data sync errors and token number duplication.</p>
     </div>
   </div>
 
@@ -46,7 +49,7 @@
       <div style="background: var(--header-grad); margin: -30px -30px 20px -30px; padding: 20px; text-align: center;">
         <img src="logo.jpeg" alt="Logo" class="login-logo">
       </div>
-      <h2>Shehjaar Medicate</h2>
+      <h2>Shehjar Medicate</h2>
       <p>Access Password Required</p>
       <div class="input-group" style="margin-bottom: 15px; text-align: left;">
         <label for="loginPassword">Password</label>
@@ -155,9 +158,9 @@
   <div id="mainApp" style="display: none;">
     <header>
       <div class="logo-section">
-        <img src="logo.jpeg" alt="Shehjaar Medicate Logo" id="appLogo">
+        <img src="logo.jpeg" alt="Shehjar Medicate Logo" id="appLogo">
         <div>
-          <h1>Shehjaar Medicate</h1>
+          <h1>Shehjar Medicate</h1>
           <p>Healthcare Management System</p>
         </div>
       </div>
@@ -225,7 +228,10 @@
               </div>
             </div>
             <!-- Card 4 -->
-            <div class="stat-card">
+            <div class="stat-card" onclick="showPendingBalancePopup()"
+              style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;"
+              onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 25px -5px rgba(234, 88, 12, 0.3)';"
+              onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 6px -1px rgba(0,0,0,0.1)';">
               <div class="stat-icon-box" style="background: #ffedd5; color: #ea580c;">
                 <i class="fas fa-exclamation-circle"></i>
               </div>
@@ -382,7 +388,8 @@
                 <label for="phone"
                   style="font-size: 10px; font-weight: 800; color: #0f766e; text-transform: uppercase;">Phone *:</label>
                 <div style="position: relative; flex: 1;">
-                  <input type="tel" id="phone" placeholder="10-digit number" required pattern="[0-9]{10}" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, ''); handleSearchInput('phone')"
+                  <input type="tel" id="phone" placeholder="10-digit number" required pattern="[0-9]{10}" maxlength="10"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, ''); handleSearchInput('phone')"
                     onfocus="showCustomDropdown('phone')" onblur="hideCustomDropdown('phone')" autocomplete="off"
                     style="width: 100%; padding: 8px 10px; font-size: 14px; color: #0f172a; border: 1px solid #99f6e4; border-radius: 4px; outline: none; background: #fff;">
                   <div id="customPhoneDropdown"
@@ -391,7 +398,8 @@
                 </div>
               </div>
               <!-- Doctor -->
-              <div style="display: flex; flex-direction: column; flex: 1.5; min-width: 140px; position: relative; justify-content: center;">
+              <div
+                style="display: flex; flex-direction: column; flex: 1.5; min-width: 140px; position: relative; justify-content: center;">
                 <div style="display: flex; align-items: center; gap: 6px;">
                   <label for="doctor"
                     style="font-size: 10px; font-weight: 800; color: #0f766e; text-transform: uppercase;">Doctor:</label>
@@ -400,7 +408,8 @@
                     <option value="">-- Select --</option>
                   </select>
                 </div>
-                <div id="behaviorAlert" style="display: none; position: absolute; top: calc(100% + 2px); left: 0; right: 0; background: #fef2f2; color: #b91c1c; font-size: 10px; font-weight: 800; padding: 4px 6px; border: 1px solid #fecaca; border-radius: 4px; z-index: 10; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                <div id="behaviorAlert"
+                  style="display: none; position: absolute; top: calc(100% + 2px); left: 0; right: 0; background: #fef2f2; color: #b91c1c; font-size: 10px; font-weight: 800; padding: 4px 6px; border: 1px solid #fecaca; border-radius: 4px; z-index: 10; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
                   ⚠️ This patient has a bad behavior history with this doctor. Please appoint a different doctor.
                 </div>
               </div>
@@ -412,25 +421,36 @@
               <div style="flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 260px;">
 
                 <!-- Row 3: Toggles -->
-                <div style="display:flex; align-items:center; background:#e2e8f0; padding:7px 12px; border-radius:6px; border:1px solid #cbd5e1; gap:18px; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none;">
-                  <label for="underObservation" style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:11px; color:#b45309; font-weight:800; text-transform:uppercase; white-space:nowrap; flex-shrink:0;">
-                    <input type="checkbox" id="underObservation" onchange="handleObservationChange()" checked style="width:13px; height:13px; cursor:pointer; accent-color:#b45309; flex-shrink:0; margin:0;">
+                <div
+                  style="display:flex; align-items:center; background:#e2e8f0; padding:7px 12px; border-radius:6px; border:1px solid #cbd5e1; gap:18px; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none;">
+                  <label for="underObservation"
+                    style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:11px; color:#b45309; font-weight:800; text-transform:uppercase; white-space:nowrap; flex-shrink:0;">
+                    <input type="checkbox" id="underObservation" onchange="handleObservationChange()" checked
+                      style="width:13px; height:13px; cursor:pointer; accent-color:#b45309; flex-shrink:0; margin:0;">
                     Under Observation
                   </label>
-                  <label for="leftClinic" style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:11px; color:#1e40af; font-weight:800; text-transform:uppercase; white-space:nowrap; flex-shrink:0;">
-                    <input type="checkbox" id="leftClinic" onchange="handleLeftClinicChange()" style="width:13px; height:13px; cursor:pointer; accent-color:#1e40af; flex-shrink:0; margin:0;">
+                  <label for="leftClinic"
+                    style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:11px; color:#1e40af; font-weight:800; text-transform:uppercase; white-space:nowrap; flex-shrink:0;">
+                    <input type="checkbox" id="leftClinic" onchange="handleLeftClinicChange()"
+                      style="width:13px; height:13px; cursor:pointer; accent-color:#1e40af; flex-shrink:0; margin:0;">
                     Left Clinic
                   </label>
-                  <label for="isExtraVisit" style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:11px; color:#6d28d9; font-weight:800; text-transform:uppercase; white-space:nowrap; flex-shrink:0;">
-                    <input type="checkbox" id="isExtraVisit" onchange="handleExtraVisitCheckbox()" style="width:13px; height:13px; cursor:pointer; accent-color:#6d28d9; flex-shrink:0; margin:0;">
+                  <label for="isExtraVisit"
+                    style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:11px; color:#6d28d9; font-weight:800; text-transform:uppercase; white-space:nowrap; flex-shrink:0;">
+                    <input type="checkbox" id="isExtraVisit" onchange="handleExtraVisitCheckbox()"
+                      style="width:13px; height:13px; cursor:pointer; accent-color:#6d28d9; flex-shrink:0; margin:0;">
                     Extra Visit
                   </label>
-                  <label for="fromAnotherClinic" style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:11px; color:#047857; font-weight:800; text-transform:uppercase; white-space:nowrap; flex-shrink:0;">
-                    <input type="checkbox" id="fromAnotherClinic" onchange="handleAnotherClinicChange()" style="width:13px; height:13px; cursor:pointer; accent-color:#047857; flex-shrink:0; margin:0;">
+                  <label for="fromAnotherClinic"
+                    style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:11px; color:#047857; font-weight:800; text-transform:uppercase; white-space:nowrap; flex-shrink:0;">
+                    <input type="checkbox" id="fromAnotherClinic" onchange="handleAnotherClinicChange()"
+                      style="width:13px; height:13px; cursor:pointer; accent-color:#047857; flex-shrink:0; margin:0;">
                     Another Clinic
                   </label>
-                  <label for="leftWithoutCheckup" style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:11px; color:#b91c1c; font-weight:800; text-transform:uppercase; white-space:nowrap; flex-shrink:0;">
-                    <input type="checkbox" id="leftWithoutCheckup" onchange="handleLeftWithoutCheckupChange()" style="width:13px; height:13px; cursor:pointer; accent-color:#b91c1c; flex-shrink:0; margin:0;">
+                  <label for="leftWithoutCheckup"
+                    style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:11px; color:#b91c1c; font-weight:800; text-transform:uppercase; white-space:nowrap; flex-shrink:0;">
+                    <input type="checkbox" id="leftWithoutCheckup" onchange="handleLeftWithoutCheckupChange()"
+                      style="width:13px; height:13px; cursor:pointer; accent-color:#b91c1c; flex-shrink:0; margin:0;">
                     Left w/o Treatment
                   </label>
                   <select id="patientBehavior" onchange="updateBehaviorDropdownColor()">
@@ -464,9 +484,14 @@
                       <input type="number" id="paid" class="smart-align" placeholder="0"
                         oninput="uncheckObservation(); calculateBalance()"
                         style="width: 100%; padding: 6px 75px 6px 6px; font-size: 15px; font-family: monospace; background: #fff; border: 2px solid #86efac; border-radius: 4px; outline: none; color: #16a34a; box-sizing: border-box; text-align: left !important;">
-                      <div style="position: absolute; right: 3px; top: 50%; transform: translateY(-50%); display: flex; gap: 2px;">
-                        <button type="button" onclick="setDoctorPaidStatus(true)" style="background: #16a34a; color: white; border: none; padding: 3px 5px; border-radius: 3px; font-size: 9px; cursor: pointer; font-weight: 800; text-transform: uppercase;" title="Fully Paid">Paid</button>
-                        <button type="button" onclick="setDoctorPaidStatus(false)" style="background: #ef4444; color: white; border: none; padding: 3px 5px; border-radius: 3px; font-size: 9px; cursor: pointer; font-weight: 800; text-transform: uppercase;" title="Not Paid">Unpaid</button>
+                      <div
+                        style="position: absolute; right: 3px; top: 50%; transform: translateY(-50%); display: flex; gap: 2px;">
+                        <button type="button" onclick="setDoctorPaidStatus(true)"
+                          style="background: #16a34a; color: white; border: none; padding: 3px 5px; border-radius: 3px; font-size: 9px; cursor: pointer; font-weight: 800; text-transform: uppercase;"
+                          title="Fully Paid">Paid</button>
+                        <button type="button" onclick="setDoctorPaidStatus(false)"
+                          style="background: #ef4444; color: white; border: none; padding: 3px 5px; border-radius: 3px; font-size: 9px; cursor: pointer; font-weight: 800; text-transform: uppercase;"
+                          title="Not Paid">Unpaid</button>
                       </div>
                     </div>
                   </div>
@@ -505,9 +530,14 @@
                       <input type="number" id="medicinePaid" class="smart-align" placeholder="0"
                         oninput="uncheckObservation(); calculateMedicineBalance()"
                         style="width: 100%; padding: 6px 75px 6px 6px; font-size: 15px; font-family: monospace; background: #fff; border: 2px solid #86efac; border-radius: 4px; outline: none; color: #16a34a; box-sizing: border-box; text-align: left !important;">
-                      <div style="position: absolute; right: 3px; top: 50%; transform: translateY(-50%); display: flex; gap: 2px;">
-                        <button type="button" onclick="setMedicinePaidStatus(true)" style="background: #16a34a; color: white; border: none; padding: 3px 5px; border-radius: 3px; font-size: 9px; cursor: pointer; font-weight: 800; text-transform: uppercase;" title="Fully Paid">Paid</button>
-                        <button type="button" onclick="setMedicinePaidStatus(false)" style="background: #ef4444; color: white; border: none; padding: 3px 5px; border-radius: 3px; font-size: 9px; cursor: pointer; font-weight: 800; text-transform: uppercase;" title="Not Paid">Unpaid</button>
+                      <div
+                        style="position: absolute; right: 3px; top: 50%; transform: translateY(-50%); display: flex; gap: 2px;">
+                        <button type="button" onclick="setMedicinePaidStatus(true)"
+                          style="background: #16a34a; color: white; border: none; padding: 3px 5px; border-radius: 3px; font-size: 9px; cursor: pointer; font-weight: 800; text-transform: uppercase;"
+                          title="Fully Paid">Paid</button>
+                        <button type="button" onclick="setMedicinePaidStatus(false)"
+                          style="background: #ef4444; color: white; border: none; padding: 3px 5px; border-radius: 3px; font-size: 9px; cursor: pointer; font-weight: 800; text-transform: uppercase;"
+                          title="Not Paid">Unpaid</button>
                       </div>
                     </div>
                   </div>
@@ -688,12 +718,16 @@
 
             <!-- Doctor Tally Tabs -->
             <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-              <button id="dtTabStatement" onclick="switchDoctorTallyTab('statement')" style="padding: 6px 16px; border: none; background: #e2e8f0; color: #475569; border-radius: 4px; cursor: pointer; font-weight: 800; font-size: 13px;">Statement</button>
-              <button id="dtTabHistory" onclick="switchDoctorTallyTab('history')" style="padding: 6px 16px; border: none; background: #0ea5e9; color: white; border-radius: 4px; cursor: pointer; font-weight: 800; font-size: 13px;">Payment History</button>
+              <button id="dtTabStatement" onclick="switchDoctorTallyTab('statement')"
+                style="padding: 6px 16px; border: none; background: #e2e8f0; color: #475569; border-radius: 4px; cursor: pointer; font-weight: 800; font-size: 13px;">Statement</button>
+              <button id="dtTabHistory" onclick="switchDoctorTallyTab('history')"
+                style="padding: 6px 16px; border: none; background: #0ea5e9; color: white; border-radius: 4px; cursor: pointer; font-weight: 800; font-size: 13px;">Payment
+                History</button>
             </div>
 
             <!-- Statement Table Container -->
-            <div id="dtStatementContainer" class="table-container" style="display: none; max-height: calc(100vh - 210px); overflow-y: auto; border-radius: 0;">
+            <div id="dtStatementContainer" class="table-container"
+              style="display: none; max-height: calc(100vh - 210px); overflow-y: auto; border-radius: 0;">
               <table style="width: 100%;">
                 <thead>
                   <tr>
@@ -722,7 +756,8 @@
             </div>
 
             <!-- Payment History Table Container -->
-            <div id="dtHistoryContainer" class="table-container" style="max-height: calc(100vh - 210px); overflow-y: auto; border-radius: 0;">
+            <div id="dtHistoryContainer" class="table-container"
+              style="max-height: calc(100vh - 210px); overflow-y: auto; border-radius: 0;">
               <table style="width: 100%;">
                 <thead>
                   <tr>
@@ -742,7 +777,8 @@
                     <td id="dtHistoryTotalShehjar" style="color: #16a34a;">₹ 0</td>
                   </tr>
                   <tr>
-                    <td colspan="2" style="text-align: right; color: #475569; padding-right: 15px;">REMAINING BALANCE:</td>
+                    <td colspan="2" style="text-align: right; color: #475569; padding-right: 15px;">REMAINING BALANCE:
+                    </td>
                     <td id="dtHistoryRemaining" style="color: #b91c1c;">₹ 0</td>
                   </tr>
                 </tfoot>
@@ -751,7 +787,7 @@
           </div>
 
           <!-- Right Side: Invoice View -->
-          <div class="tally-right"
+          <div class="tally-right" id="receiptCard"
             style="flex: 1 1 300px; background: #fff; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); min-width: 280px; position: sticky; top: 15px; display: flex; flex-direction: column;">
 
             <!-- Receipt Header / Branding -->
@@ -765,7 +801,7 @@
               <div style="text-align: left;">
                 <h3
                   style="margin: 0; color: #fff; font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">
-                  Shehjaar Medicate</h3>
+                  Shehjar Medicate</h3>
                 <p
                   style="margin: 2px 0 0; color: rgba(255,255,255,0.9); font-size: 9px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">
                   Doctor's Payment Receipt</p>
@@ -850,7 +886,8 @@
                   </div>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
-                  <span style="color: #64748b; font-weight: 600; font-size: 11px; text-transform: uppercase;">Notes (Opt)</span>
+                  <span style="color: #64748b; font-weight: 600; font-size: 11px; text-transform: uppercase;">Notes
+                    (Opt)</span>
                   <div style="position: relative; width: 140px;">
                     <input type="text" id="rcptNotes" placeholder="Any note..."
                       style="width: 100%; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; font-weight: 500; color: #334155; outline: none; background: #fff; box-sizing: border-box;" />
@@ -935,8 +972,12 @@
 
             <!-- Patients Tally Tabs -->
             <div style="display: flex; gap: 10px; margin-bottom: 10px; padding: 10px 15px 0;">
-              <button id="ptTabStatement" onclick="switchPatientTallyTab('statement')" style="padding: 6px 16px; border: none; background: #e2e8f0; color: #475569; border-radius: 4px; cursor: pointer; font-weight: 800; font-size: 13px;">Patients Statement</button>
-              <button id="ptTabBalanceSheet" onclick="switchPatientTallyTab('balance')" style="padding: 6px 16px; border: none; background: #0ea5e9; color: white; border-radius: 4px; cursor: pointer; font-weight: 800; font-size: 13px;">Balance Sheet</button>
+              <button id="ptTabStatement" onclick="switchPatientTallyTab('statement')"
+                style="padding: 6px 16px; border: none; background: #e2e8f0; color: #475569; border-radius: 4px; cursor: pointer; font-weight: 800; font-size: 13px;">Patients
+                Statement</button>
+              <button id="ptTabBalanceSheet" onclick="switchPatientTallyTab('balance')"
+                style="padding: 6px 16px; border: none; background: #0ea5e9; color: white; border-radius: 4px; cursor: pointer; font-weight: 800; font-size: 13px;">Balance
+                Sheet</button>
             </div>
 
             <!-- Statement Table -->
@@ -972,7 +1013,8 @@
             </div>
 
             <!-- Balance Sheet Table Container -->
-            <div id="ptBalanceSheetContainer" class="table-container" style="display: block; max-height: calc(100vh - 210px); overflow-y: auto; overflow-x: auto; border-radius: 0; padding: 15px;">
+            <div id="ptBalanceSheetContainer" class="table-container"
+              style="display: block; max-height: calc(100vh - 210px); overflow-y: auto; overflow-x: auto; border-radius: 0; padding: 15px;">
               <table style="width: 100%; border-collapse: collapse;">
                 <thead>
                   <tr style="background-color: #0f766e; color: white;">
@@ -987,7 +1029,8 @@
                   <!-- Rendered via JS -->
                 </tbody>
               </table>
-              <div id="ptBalanceSheetEmpty" style="display: none; text-align: center; padding: 20px; color: #64748b; font-weight: bold;">
+              <div id="ptBalanceSheetEmpty"
+                style="display: none; text-align: center; padding: 20px; color: #64748b; font-weight: bold;">
                 No pending balances found.
               </div>
             </div>
@@ -995,9 +1038,8 @@
           </div>
 
           <!-- Right Side: Patient Invoice View -->
-          <div class="tally-right"
+          <div class="tally-right" id="patientInvoiceCard"
             style="flex: 1 1 30%; background: #fff; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); min-width: 320px; position: sticky; top: 15px; display: flex; flex-direction: column;">
-
             <!-- Invoice Header / Branding -->
             <div
               style="background: linear-gradient(135deg, #2563eb, #1e40af); padding: 8px 10px; text-align: center; color: white; display: flex; align-items: center; justify-content: center; gap: 10px; position: relative; flex-shrink: 0; border-radius: 8px 8px 0 0;">
@@ -1009,7 +1051,7 @@
               <div style="text-align: left;">
                 <h3
                   style="margin: 0; color: #fff; font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">
-                  Shehjaar Medicate</h3>
+                  Shehjar Medicate</h3>
                 <p
                   style="margin: 2px 0 0; color: rgba(255,255,255,0.9); font-size: 9px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">
                   Patient's Invoice & Record</p>
@@ -1124,6 +1166,13 @@
                     Balance</span>
                   <span id="invFinalBalance"
                     style="font-family: monospace; font-size: 16px; font-weight: 800; color: #1d4ed8;">₹ 0</span>
+                </div>
+
+                <!-- Payment Notes (Optional) -->
+                <div
+                  style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 10px; margin-top: 4px;">
+                  <input type="text" id="ptInvoiceNotes" placeholder="Optional Notes (e.g., GPay, Cash)..."
+                    style="width: 100%; border: none; background: transparent; font-size: 11px; color: #475569; outline: none; font-style: italic;">
                 </div>
 
                 <!-- Save Entry Button -->
@@ -1275,6 +1324,70 @@
   <!-- Invisible Container for PDF Printing -->
   <div id="printArea" class="print-area"></div>
 
+
+  <!-- Pending Balance Popup Modal -->
+  <div id="pendingBalanceModal" class="modal"
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 9999; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease;">
+    <!-- Prevent clicks inside the modal from bubbling to the background if we ever add background click, but user said not to close on outside click anyway -->
+    <div
+      style="background: white; width: 95%; max-width: 750px; border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; transform: translateY(-20px); transition: transform 0.3s ease;"
+      id="pendingBalanceModalContent">
+      <div style="background: linear-gradient(135deg, #4f46e5, #3730a3); padding: 15px 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h3
+            style="margin: 0; color: white; font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-exclamation-circle"></i> Pending Balances
+          </h3>
+          <button onclick="closePendingBalancePopup()"
+            style="background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: background 0.2s;"
+            onmouseover="this.style.background='rgba(255,255,255,0.3)'"
+            onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <!-- Filter Bar inside Header -->
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);">
+          <div style="font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.9);">
+            <span id="popupDateLabel" style="color: white;">Today's</span> Pending: <span id="popupTotalPendingValue"
+              style="color: #fbbf24; font-size: 15px; font-weight: 800; margin-left: 3px;">₹ 0</span>
+            <span style="color: rgba(255,255,255,0.7); font-weight: 500; font-size: 11px; margin-left: 5px;"
+              id="popupPatientCount">(0 patients)</span>
+          </div>
+          <div style="display: flex; gap: 6px; align-items: center;">
+            <input type="date" id="popupDateFilter" onchange="showPendingBalancePopup(this.value)"
+              style="padding: 4px 8px; border: none; border-radius: 4px; font-size: 12px; outline: none; background: rgba(255,255,255,0.9); color: #3730a3; font-weight: 600; cursor: pointer;">
+            <button onclick="showPendingBalancePopup('ALL')"
+              style="padding: 4px 10px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; font-size: 12px; font-weight: 700; color: white; cursor: pointer; transition: background 0.2s;"
+              onmouseover="this.style.background='rgba(255,255,255,0.3)'"
+              onmouseout="this.style.background='rgba(255,255,255,0.2)'">All</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Column Names -->
+      <div
+        style="background: #312e81; display: flex; padding: 10px 15px; color: rgba(255,255,255,0.9); font-size: 11px; text-transform: uppercase; font-weight: 700;">
+        <div style="flex: 2;">Patient Name (ID)</div>
+        <div style="flex: 1.5;">Phone</div>
+        <div style="flex: 2;">Address</div>
+        <div style="flex: 1.5; text-align: right; padding-right: 20px;">Pending Balance</div>
+      </div>
+      <div style="padding: 0; max-height: 60vh; overflow-y: auto; background: #f8fafc;">
+        <div style="background: white; width: 100%;">
+          <div id="popupPendingTableBody" style="display: flex; flex-direction: column;">
+          </div>
+        </div>
+        <div id="popupPendingEmpty"
+          style="display: none; text-align: center; padding: 30px; color: #64748b; font-weight: bold;">
+          <i class="fas fa-check-circle"
+            style="font-size: 32px; color: #10b981; margin-bottom: 10px; display: block;"></i>
+          No pending balances found!
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script src="script.js"></script>
 </body>
