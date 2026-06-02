@@ -364,19 +364,6 @@
                   </div>
                 </div>
               </div>
-              <!-- Phone -->
-              <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 120px;">
-                <label for="phone"
-                  style="font-size: 10px; font-weight: 800; color: #0f766e; text-transform: uppercase;">Phone *:</label>
-                <div style="position: relative; flex: 1;">
-                  <input type="tel" id="phone" placeholder="+91" required oninput="handleSearchInput('phone')"
-                    onfocus="showCustomDropdown('phone')" onblur="hideCustomDropdown('phone')" autocomplete="off"
-                    style="width: 100%; padding: 8px 10px; font-size: 14px; color: #0f172a; border: 1px solid #99f6e4; border-radius: 4px; outline: none; background: #fff;">
-                  <div id="customPhoneDropdown"
-                    style="display: none; position: absolute; top: calc(100% + 4px); left: 0; min-width: 280px; max-height: 250px; overflow-y: auto; background: white; border: 1px solid #99f6e4; border-radius: 6px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 100;">
-                  </div>
-                </div>
-              </div>
               <!-- Address -->
               <div style="display: flex; align-items: center; gap: 6px; flex: 1.5; min-width: 140px;">
                 <label for="address"
@@ -386,6 +373,19 @@
                     onfocus="showCustomDropdown('address')" onblur="hideCustomDropdown('address')" autocomplete="off"
                     style="width: 100%; padding: 8px 10px; font-size: 14px; color: #0f172a; border: 1px solid #99f6e4; border-radius: 4px; outline: none; background: #fff;">
                   <div id="customAddressDropdown"
+                    style="display: none; position: absolute; top: calc(100% + 4px); left: 0; min-width: 280px; max-height: 250px; overflow-y: auto; background: white; border: 1px solid #99f6e4; border-radius: 6px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 100;">
+                  </div>
+                </div>
+              </div>
+              <!-- Phone -->
+              <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 120px;">
+                <label for="phone"
+                  style="font-size: 10px; font-weight: 800; color: #0f766e; text-transform: uppercase;">Phone *:</label>
+                <div style="position: relative; flex: 1;">
+                  <input type="tel" id="phone" placeholder="10-digit number" required pattern="[0-9]{10}" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, ''); handleSearchInput('phone')"
+                    onfocus="showCustomDropdown('phone')" onblur="hideCustomDropdown('phone')" autocomplete="off"
+                    style="width: 100%; padding: 8px 10px; font-size: 14px; color: #0f172a; border: 1px solid #99f6e4; border-radius: 4px; outline: none; background: #fff;">
+                  <div id="customPhoneDropdown"
                     style="display: none; position: absolute; top: calc(100% + 4px); right: 0; min-width: 280px; max-height: 250px; overflow-y: auto; background: white; border: 1px solid #99f6e4; border-radius: 6px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 100;">
                   </div>
                 </div>
@@ -933,9 +933,15 @@
               </div>
             </div>
 
-            <!-- Table -->
-            <div class="table-container"
-              style="max-height: calc(100vh - 170px); overflow-y: auto; overflow-x: auto; border-radius: 0;">
+            <!-- Patients Tally Tabs -->
+            <div style="display: flex; gap: 10px; margin-bottom: 10px; padding: 10px 15px 0;">
+              <button id="ptTabStatement" onclick="switchPatientTallyTab('statement')" style="padding: 6px 16px; border: none; background: #e2e8f0; color: #475569; border-radius: 4px; cursor: pointer; font-weight: 800; font-size: 13px;">Patients Statement</button>
+              <button id="ptTabBalanceSheet" onclick="switchPatientTallyTab('balance')" style="padding: 6px 16px; border: none; background: #0ea5e9; color: white; border-radius: 4px; cursor: pointer; font-weight: 800; font-size: 13px;">Balance Sheet</button>
+            </div>
+
+            <!-- Statement Table -->
+            <div id="ptStatementContainer" class="table-container"
+              style="display: none; max-height: calc(100vh - 210px); overflow-y: auto; overflow-x: auto; border-radius: 0;">
               <table style="width: 100%;">
                 <thead>
                   <tr>
@@ -964,6 +970,28 @@
                 </tfoot>
               </table>
             </div>
+
+            <!-- Balance Sheet Table Container -->
+            <div id="ptBalanceSheetContainer" class="table-container" style="display: block; max-height: calc(100vh - 210px); overflow-y: auto; overflow-x: auto; border-radius: 0; padding: 15px;">
+              <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="background-color: #0f766e; color: white;">
+                    <th style="padding: 12px; text-align: left;">Patient Name</th>
+                    <th style="padding: 12px; text-align: left;">Patient ID</th>
+                    <th style="padding: 12px; text-align: left;">Phone Number</th>
+                    <th style="padding: 12px; text-align: left;">Address</th>
+                    <th style="padding: 12px; text-align: right;">Total Pending Balance</th>
+                  </tr>
+                </thead>
+                <tbody id="ptBalanceSheetTableBody">
+                  <!-- Rendered via JS -->
+                </tbody>
+              </table>
+              <div id="ptBalanceSheetEmpty" style="display: none; text-align: center; padding: 20px; color: #64748b; font-weight: bold;">
+                No pending balances found.
+              </div>
+            </div>
+
           </div>
 
           <!-- Right Side: Patient Invoice View -->
@@ -1113,6 +1141,7 @@
   </div>
 
   <!-- Recent Sessions Tab -->
+
   <div id='recentSessionsTab' class='tab-content'>
     <div class='app-container' style='padding-top: 15px;'>
       <section class="card">
