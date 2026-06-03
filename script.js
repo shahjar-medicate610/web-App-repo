@@ -118,6 +118,55 @@ window.customPromptAsync = function(message) {
   });
 };
 
+// Custom Behavior Prompt Popup (Async)
+window.behaviorPromptAsync = function(message) {
+  return new Promise((resolve) => {
+    document.getElementById('behaviorPromptMessage').innerText = message;
+    const modal = document.getElementById('behaviorPromptModal');
+    const box = document.getElementById('behaviorPromptBox');
+    const input = document.getElementById('behaviorPromptInput');
+    
+    input.value = '';
+    
+    const btnCancel = document.getElementById('btnBehaviorPromptCancel');
+    const btnOk = document.getElementById('btnBehaviorPromptOk');
+    
+    const cleanup = () => {
+      btnCancel.onclick = null;
+      btnOk.onclick = null;
+      input.onkeydown = null;
+      modal.style.opacity = '0';
+      box.style.transform = 'scale(0.9)';
+      setTimeout(() => {
+        modal.style.display = 'none';
+      }, 200);
+    };
+
+    btnCancel.onclick = () => {
+      cleanup();
+      resolve(null);
+    };
+
+    btnOk.onclick = () => {
+      cleanup();
+      resolve(input.value);
+    };
+
+    modal.style.display = 'flex';
+    setTimeout(() => {
+      modal.style.opacity = '1';
+      box.style.transform = 'scale(1)';
+      input.focus();
+    }, 10);
+    
+    input.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        btnOk.click();
+      }
+    };
+  });
+};
+
 // Pagination State
 let currentPage = 1;
 const rowsPerPage = 100;
@@ -412,9 +461,10 @@ function renderObservationList(data) {
     const isAdvance = bal < 0;
     // Parse behavior from status: "Left Clinic (Bad)" → cleanStatus="Left Clinic", behavior="Bad"
     const rawStatus = String(p.status || "");
-    const behMatch = rawStatus.match(/\s*\((Good|Bad)\)$/);
-    const obsCleanStatus = behMatch ? rawStatus.replace(/\s*\((Good|Bad)\)$/, "").trim() : rawStatus;
-    const obsBehavior = behMatch ? behMatch[1] : null;
+    // Match both "(Good|Bad)" and "(Good|Bad: reason)"
+    const behMatch = rawStatus.match(/\s*\(((Good|Bad)(?::\s*([^)]*?))?)\)$/);
+    const obsCleanStatus = behMatch ? rawStatus.replace(/\s*\(((Good|Bad)(?::\s*([^)]*?))?)\)$/, "").trim() : rawStatus;
+    const obsBehavior = behMatch ? behMatch[2] : null;
 
     let badgeClass;
     if (obsCleanStatus === "Left Clinic") badgeClass = 'status-left-clinic';
@@ -425,7 +475,7 @@ function renderObservationList(data) {
     else badgeClass = 'status-done';
     
     let rowStyle = (obsCleanStatus === "Left Clinic") ? "background-color: #bbf7d0;" : "";
-    if (obsBehavior === "Bad") rowStyle = "background-color: #fee2e2;";
+    if (obsBehavior === "Bad") rowStyle = "background-color: #fecaca; color: #7f1d1d;";
 
     // Insert a doctor separator row when doctor changes (only when showing all doctors)
     const currentDoctor = (p.doctor || "").trim();
@@ -648,12 +698,12 @@ function applyPatientHistory(lastRecord) {
   let isExpired = today > expiryDate || isNaN(expiryDate.getTime());
 
   const rawStatus = String(lastRecord.status || "");
-  const cleanStatus = rawStatus.replace(/\s*\((Good|Bad)\)$/, "").trim();
+  const cleanStatus = rawStatus.replace(/\s*\(((Good|Bad)(?::\s*([^)]*?))?)\)$/, "").trim();
 
   // Find the last COMPLETED record to determine the cycle state robustly
   let lastCompletedRecord = null;
   for (let p of patientHistory) {
-    const pSt = String(p.status || "").replace(/\s*\((Good|Bad)\)$/, "").trim();
+    const pSt = String(p.status || "").replace(/\s*\(((Good|Bad)(?::\s*([^)]*?))?)\)$/, "").trim();
     if (pSt !== "Left Without Checkup" && pSt !== "Under Observation" && pSt !== "Registered") {
       lastCompletedRecord = p;
       break;
@@ -725,21 +775,48 @@ function applyPatientHistory(lastRecord) {
   setTimeout(() => { checkPatientBehavior(); }, 100);
 }
 
-function updateBehaviorDropdownColor() {
+async function updateBehaviorDropdownColor(isManual = false) {
   const behaviorSelect = document.getElementById("patientBehavior");
   const submitBtn = document.getElementById("submitBtn");
   if (!behaviorSelect) return;
   const val = behaviorSelect.value;
-  if (val === "Good") {
-    behaviorSelect.style.background = "#22c55e"; // Green
+
+  if (val === "Good" || val === "Bad") {
+    if (isManual) {
+      const label = val === "Bad" ? "BAD" : "GOOD";
+      const reason = await behaviorPromptAsync(`Please enter the reason for marking ${label} behavior:\n(e.g., Rude, Did not follow advice, Very cooperative)`);
+      if (reason && reason.trim() !== "") {
+        // Store reason in hidden input
+        let reasonInput = document.getElementById("behaviorReason");
+        if (!reasonInput) {
+          reasonInput = document.createElement("input");
+          reasonInput.type = "hidden";
+          reasonInput.id = "behaviorReason";
+          behaviorSelect.parentElement.appendChild(reasonInput);
+        }
+        reasonInput.value = reason.trim();
+      } else {
+        // User cancelled or left blank → reset
+        behaviorSelect.value = "";
+        const reasonInput = document.getElementById("behaviorReason");
+        if (reasonInput) reasonInput.value = "";
+      }
+    }
+  } else {
+    const reasonInput = document.getElementById("behaviorReason");
+    if (reasonInput) reasonInput.value = "";
+  }
+
+  const updatedVal = behaviorSelect.value;
+  if (updatedVal === "Good") {
+    behaviorSelect.style.background = "#22c55e";
     if (submitBtn) submitBtn.style.background = "#22c55e";
-  } else if (val === "Bad") {
-    behaviorSelect.style.background = "#ef4444"; // Red
+  } else if (updatedVal === "Bad") {
+    behaviorSelect.style.background = "#ef4444";
     if (submitBtn) submitBtn.style.background = "#ef4444";
   } else {
-    // Unselected / empty — blue
     behaviorSelect.style.background = "#2563eb";
-    if (submitBtn) submitBtn.style.background = "linear-gradient(135deg, #0ea5e9, #0284c7)"; // keep default blue CSS
+    if (submitBtn) submitBtn.style.background = "linear-gradient(135deg, #0ea5e9, #0284c7)";
   }
 }
 
@@ -766,16 +843,20 @@ function checkPatientBehavior() {
   );
 
   let hasBadBehavior = false;
+  let badReason = "";
   if (recordsWithDoc.length > 0) {
-    // allPatients is sorted newest first, so index 0 is the most recent
     const latestRecord = recordsWithDoc[0];
     const statusStr = String(latestRecord.status || "");
-    const behMatch = statusStr.match(/\((Good|Bad)\)$/);
-    const extractedBehavior = behMatch ? behMatch[1] : "";
-    hasBadBehavior = (extractedBehavior === "Bad");
+    // Match both "(Bad)" and "(Bad: reason)" formats
+    const behMatch = statusStr.match(/\((Bad(?::\s*([^)]*?))?)\)/);
+    if (behMatch) {
+      hasBadBehavior = true;
+      badReason = behMatch[2] ? behMatch[2].trim() : "";
+    }
   }
 
   if (hasBadBehavior) {
+    alertEl.innerHTML = `⚠️ This patient has a <b>BAD BEHAVIOR</b> history with this doctor.${badReason ? ` <br><span style="font-size:9px;">Reason: ${badReason}</span>` : ""} Please consider a different doctor.`;
     alertEl.style.display = "block";
     docDropdown.classList.add("pulse-red-border");
   } else {
@@ -1046,8 +1127,11 @@ async function handleSearchInput(field) {
 
   if (inputVal.length === 0) {
     if (field === 'name') {
-      refreshPreviewIds(); // Name cleared — reset to new patient preview
-      showPatientBadge("new");
+      const mode = document.getElementById("formMode") ? document.getElementById("formMode").value : "add";
+      if (mode !== "update") {
+        refreshPreviewIds(); // Name cleared — reset to new patient preview
+        showPatientBadge("new");
+      }
     }
     if (dropdown) dropdown.style.display = "none";
     return;
@@ -1308,10 +1392,17 @@ async function addPatient() {
 
   const patientBehaviorEl = document.getElementById("patientBehavior");
   const patientBehavior = patientBehaviorEl ? patientBehaviorEl.value : ""; // "Good", "Bad", or "" (unselected)
+  const behaviorReasonEl = document.getElementById("behaviorReason");
+  const behaviorReason = behaviorReasonEl ? behaviorReasonEl.value.trim() : "";
   
-  // Append behavior to status if selected (e.g., "Left Clinic (Bad)")
+  // Append behavior (with reason) to status if selected
+  // e.g. "Left Clinic (Bad: Rude patient)" or "Left Clinic (Good: Very cooperative)"
   if (patientBehavior === "Good" || patientBehavior === "Bad") {
-    finalStatus = finalStatus + " (" + patientBehavior + ")";
+    if (behaviorReason) {
+      finalStatus = finalStatus + " (" + patientBehavior + ": " + behaviorReason + ")";
+    } else {
+      finalStatus = finalStatus + " (" + patientBehavior + ")";
+    }
   }
 
   const patientData = {
@@ -1464,9 +1555,9 @@ function renderTable(data, resetPage = true) {
 
     // Parse behavior from status field: "Left Clinic (Bad)" → cleanStatus="Left Clinic", behavior="Bad"
     const rawStatus = String(p.status || "");
-    const behaviorMatch = rawStatus.match(/\s*\((Good|Bad)\)$/);
-    const behavior = behaviorMatch ? behaviorMatch[1] : null; // "Good", "Bad", or null
-    const cleanStatus = behaviorMatch ? rawStatus.replace(/\s*\((Good|Bad)\)$/, "").trim() : rawStatus;
+    const behaviorMatch = rawStatus.match(/\s*\(((Good|Bad)(?::\s*([^)]*?))?)\)$/);
+    const behavior = behaviorMatch ? behaviorMatch[2] : null; // "Good", "Bad", or null
+    const cleanStatus = behaviorMatch ? rawStatus.replace(/\s*\(((Good|Bad)(?::\s*([^)]*?))?)\)$/, "").trim() : rawStatus;
 
     let badgeClass;
     if (cleanStatus === "Left Clinic") badgeClass = 'status-left-clinic';
@@ -1484,7 +1575,8 @@ function renderTable(data, resetPage = true) {
     if (isSettlement) {
       row.classList.add("settlement-row");
     } else if (behavior === "Bad") {
-      row.style.background = "#fee2e2"; // red for bad behavior
+      row.style.background = "#fecaca"; // light red for bad behavior
+      row.style.color = "#7f1d1d"; // dark red text
     } else if (cleanStatus === "Left Clinic") {
       row.style.background = "#bbf7d0"; // green for left clinic
     }
@@ -1511,8 +1603,12 @@ function renderTable(data, resetPage = true) {
       <td style="font-weight: 700; color: ${parseFloat(p.medicine_balance || 0) > 0 ? '#dc2626' : '#27ae60'}">${isSettlement ? '-' : (parseFloat(p.medicine_balance || 0) > 0 ? '₹ ' + p.medicine_balance : '₹ 0')}</td>
       <td>${isSettlement ? '-' : (p.checkup_duration_validity || p.duration || '-')}</td>
       <td>${isSettlement ? '-' : (() => {
-        if (behavior === 'Good') return `<span class="status-badge ${badgeClass}" style="white-space:nowrap;">${cleanStatus}</span><span style="display:inline-block; margin-top:3px; font-size:9px; font-weight:800; color:#16a34a; background:#dcfce7; padding:1px 6px; border-radius:3px;">(Good Behavior)</span>`;
-        if (behavior === 'Bad')  return `<span class="status-badge ${badgeClass}" style="white-space:nowrap;">${cleanStatus}</span><span style="display:inline-block; margin-top:3px; font-size:9px; font-weight:800; color:#dc2626; background:#fee2e2; padding:1px 6px; border-radius:3px;">(Bad Behavior)</span>`;
+        let reasonMatch = rawStatus.match(/\((Good|Bad):\s*([^)]+)\)$/);
+        let behaviorText = behavior === 'Good' ? '(Good Behavior)' : '(Bad Behavior)';
+        if (reasonMatch) behaviorText = `(${behaviorMatch[1]} Behavior: ${reasonMatch[2]})`;
+        
+        if (behavior === 'Good') return `<span class="status-badge ${badgeClass}" style="white-space:nowrap;">${cleanStatus}</span><span style="display:inline-block; margin-top:3px; font-size:9px; font-weight:800; color:#16a34a; background:#dcfce7; padding:1px 6px; border-radius:3px;">${behaviorText}</span>`;
+        if (behavior === 'Bad')  return `<span class="status-badge ${badgeClass}" style="white-space:nowrap;">${cleanStatus}</span><span style="display:inline-block; margin-top:3px; font-size:9px; font-weight:800; color:#dc2626; background:#fee2e2; padding:1px 6px; border-radius:3px;">${behaviorText}</span>`;
         return `<span class="status-badge ${badgeClass}">${cleanStatus}</span>`;
       })()}</td>
       <td>
@@ -2044,7 +2140,7 @@ function editPatient(patientId, checkupId, visit) {
     document.getElementById("paid").disabled = false; // Make sure paid is enabled
   }
   
-  const pStatusClean = String(p.status || "").replace(/\s*\((Good|Bad)\)$/, "").trim();
+  const pStatusClean = String(p.status || "").replace(/\s*\(((Good|Bad)(?::\s*([^)]*?))?)\)$/, "").trim();
   if (pStatusClean === "Under Observation") {
     document.getElementById("underObservation").checked = true;
     document.getElementById("leftClinic").checked = false;
@@ -2064,10 +2160,26 @@ function editPatient(patientId, checkupId, visit) {
   }
   
   if (document.getElementById("patientBehavior")) {
-    // Extract behavior from status string e.g. "Left Clinic (Bad)" → "Bad"
+    // Extract behavior from status string e.g. "Left Clinic (Bad: Rude)" → "Bad"
     const statusStr = String(p.status || "");
-    const behMatch = statusStr.match(/\((Good|Bad)\)$/);
-    const extractedBehavior = behMatch ? behMatch[1] : "";
+    const behMatch = statusStr.match(/\(((Good|Bad)(?::\s*([^)]*?))?)\)$/);
+    const extractedBehavior = behMatch ? behMatch[2] : "";
+    const extractedReason = behMatch ? behMatch[3] || "" : "";
+    
+    document.getElementById("patientBehavior").value = extractedBehavior;
+    updateBehaviorDropdownColor(); // Make sure color updates
+    
+    // Also set the reason if we are editing
+    if (extractedReason) {
+      let reasonInput = document.getElementById("behaviorReason");
+      if (!reasonInput) {
+        reasonInput = document.createElement("input");
+        reasonInput.type = "hidden";
+        reasonInput.id = "behaviorReason";
+        document.getElementById("patientBehavior").parentElement.appendChild(reasonInput);
+      }
+      reasonInput.value = extractedReason.trim();
+    }
     document.getElementById("patientBehavior").value = extractedBehavior;
     if (typeof updateBehaviorDropdownColor === "function") {
       updateBehaviorDropdownColor();
@@ -3270,5 +3382,102 @@ function updateOnlineStatus() {
   }
 }
 
+
 // Initial check on load
 document.addEventListener("DOMContentLoaded", updateOnlineStatus);
+
+// ====================================================
+// EXCEL BACKUP EXPORT FUNCTION
+// Exports the Day-wise Patient Record table to Excel
+// ====================================================
+window.exportTableToExcel = function() {
+  const dateFilterEl = document.getElementById("obsDateFilter");
+  const obsDoctorFilterEl = document.getElementById("obsDoctorFilter");
+
+  const targetDateStr = (dateFilterEl && dateFilterEl.value) ? dateFilterEl.value : formatDate(new Date());
+  const selectedDoctorFilter = obsDoctorFilterEl ? obsDoctorFilterEl.value.trim() : "";
+
+  // Filter the same way as renderObservationList
+  const obsPatients = allPatients.filter(p => {
+    if (!p.checkup_id || String(p.checkup_id).trim() === "") return false;
+    let pDateStr = p.date;
+    if (p.date) {
+      const parsedDate = new Date(p.date);
+      if (!isNaN(parsedDate)) pDateStr = formatDate(parsedDate);
+    }
+    if (pDateStr !== targetDateStr) return false;
+    if (selectedDoctorFilter !== "") {
+      if ((p.doctor || "").trim() !== selectedDoctorFilter) return false;
+    }
+    return true;
+  });
+
+  // Sort by token number
+  obsPatients.sort((a, b) => {
+    const ta = parseInt(a.token_no) || 9999;
+    const tb = parseInt(b.token_no) || 9999;
+    return ta - tb;
+  });
+
+  if (obsPatients.length === 0) {
+    alert("No records found for the selected date/filter to export.");
+    return;
+  }
+
+  // Helper: wrap cell value safely for CSV
+  const csvCell = (val) => {
+    const str = String(val === null || val === undefined ? "" : val);
+    // Escape double-quotes by doubling them, then wrap in quotes
+    return `"${str.replace(/"/g, '""')}"`;
+  };
+
+  const headers = [
+    "Token No", "Pat. ID", "Chk. ID", "Date", "Name",
+    "Phone", "Address", "Doctor", "Visit",
+    "Dr. Fee", "Paid Dr. Fee", "Med. Fee", "Paid Med. Fee",
+    "Validity Upto", "Status", "Notes"
+  ];
+
+  const rows = [headers.map(csvCell).join(",")];
+
+  obsPatients.forEach(p => {
+    const drFee = parseFloat(p.fee) || 0;
+    const paidDrFee = parseFloat(p.paid) || 0;
+    const medFee = parseFloat(p.medicine_fee) || 0;
+    const paidMedFee = parseFloat(p.medicine_paid) || 0;
+
+    rows.push([
+      csvCell(p.token_no),
+      csvCell(p.patient_id),
+      csvCell(p.checkup_id),
+      csvCell(p.date),
+      csvCell(p.name),
+      csvCell(p.phone),
+      csvCell(p.address),
+      csvCell(p.doctor),
+      csvCell(p.visit),
+      csvCell(drFee),
+      csvCell(paidDrFee),
+      csvCell(medFee),
+      csvCell(paidMedFee),
+      csvCell(p.validity_upto),
+      csvCell(p.status),
+      csvCell(p.notes)
+    ].join(","));
+  });
+
+  const csvContent = "\uFEFF" + rows.join("\r\n"); // BOM for Excel UTF-8 support
+
+  const doctorLabel = selectedDoctorFilter ? `_${selectedDoctorFilter.replace(/\s+/g, "_")}` : "";
+  const fileName = `Shehjaar_Medicate_${targetDateStr}${doctorLabel}.csv`;
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
