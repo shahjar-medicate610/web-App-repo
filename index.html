@@ -155,6 +155,27 @@
     </div>
   </div>
 
+  <!-- Behavior Prompt Popup -->
+  <div id="behaviorPromptModal"
+    style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px); z-index: 9999; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.2s ease;">
+    <div
+      style="background: white; padding: 30px 40px; border-radius: 16px; box-shadow: 0 15px 35px rgba(0,0,0,0.25); max-width: 420px; width: 90%; text-align: center; font-family: 'Inter', system-ui, sans-serif; transform: scale(0.9); transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);"
+      id="behaviorPromptBox">
+      <div style="font-size: 45px; color: #ef4444; margin-bottom: 20px;"><i class="fas fa-exclamation-triangle"></i></div>
+      <div id="behaviorPromptMessage"
+        style="font-size: 15px; color: #334155; margin-bottom: 20px; line-height: 1.5; font-weight: 600;"></div>
+      <input type="text" id="behaviorPromptInput" placeholder="Enter reason here..."
+        style="width: 100%; padding: 10px 15px; margin-bottom: 25px; border: 2px solid #fca5a5; border-radius: 8px; font-size: 15px; outline: none; transition: border-color 0.2s;"
+        onfocus="this.style.borderColor='#ef4444'" onblur="this.style.borderColor='#fca5a5'">
+      <div style="display: flex; gap: 15px; justify-content: center;">
+        <button id="btnBehaviorPromptCancel"
+          style="background: #e2e8f0; color: #475569; border: none; padding: 10px 25px; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.2s;">Cancel</button>
+        <button id="btnBehaviorPromptOk"
+          style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; padding: 10px 25px; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);">Save Reason</button>
+      </div>
+    </div>
+  </div>
+
   <div id="mainApp" style="display: none;">
     <header>
       <div class="logo-section">
@@ -453,7 +474,7 @@
                       style="width:13px; height:13px; cursor:pointer; accent-color:#b91c1c; flex-shrink:0; margin:0;">
                     Left w/o Treatment
                   </label>
-                  <select id="patientBehavior" onchange="updateBehaviorDropdownColor()">
+                  <select id="patientBehavior" onchange="updateBehaviorDropdownColor(true)">
                     <option value="" selected>-- Behavior --</option>
                     <option value="Good">Good Behavior</option>
                     <option value="Bad">Bad Behavior</option>
@@ -614,6 +635,13 @@
                 style="background: #f59e0b; color: white; padding: 4px 12px; border-radius: 20px; font-weight: 800; font-size: 14px; box-shadow: 0 2px 5px rgba(245, 158, 11, 0.3);">
                 Total: <span id="obsCount">0</span>
               </div>
+              <!-- Backup / Excel Export Button -->
+              <button onclick="exportTableToExcel()" title="Download Excel Backup for selected date"
+                style="background: #16a34a; color: white; border: none; padding: 5px 14px; border-radius: 20px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(22,163,74,0.35); transition: background 0.2s, transform 0.15s;"
+                onmouseover="this.style.background='#15803d'; this.style.transform='scale(1.05)';"
+                onmouseout="this.style.background='#16a34a'; this.style.transform='scale(1)';">
+                <i class="fas fa-file-excel"></i> Backup Excel
+              </button>
             </div>
           </div>
 
