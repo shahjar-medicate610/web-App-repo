@@ -284,7 +284,7 @@
           style="background: #ffffff; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow: hidden; margin-bottom: 20px; border: 1px solid #e2e8f0;">
           <!-- Compact Header -->
           <div
-            style="background: linear-gradient(135deg, #0ea5e9, #0284c7); padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #0369a1;">
+            style="background: linear-gradient(135deg, #0ea5e9, #0284c7); padding: 4px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #0369a1;">
             <div style="display: flex; align-items: center; gap: 8px;">
               <div
                 style="background: rgba(255,255,255,0.2); color: #fff; width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px;">
@@ -355,19 +355,19 @@
               <!-- Alerts Area (Right Aligned) -->
               <div style="display: flex; gap: 6px; margin-left: auto; align-items: center;">
                 <div id="balanceAlert"
-                  style="display: none; background: #fef2f2; border: 1px solid #fecaca; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; color: #b91c1c;">
+                  style="display: none; background: #ef4444; border: 1px solid #dc2626; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 900; color: white; box-shadow: 0 2px 4px rgba(239,68,68,0.3); letter-spacing: 0.5px;">
                   ⚠️ Prev Bal: ₹ <span id="pendingValue">0</span>
                 </div>
                 <div id="advanceAlert"
-                  style="display: none; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; color: #15803d;">
+                  style="display: none; background: #f0fdf4; border: 1px solid #86efac; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 900; color: #15803d; box-shadow: 0 2px 4px rgba(21,128,61,0.15); letter-spacing: 0.5px;">
                   ℹ️ Advance: ₹ <span id="advanceValue">0</span>
                 </div>
                 <div id="medBalanceAlert"
-                  style="display: none; background: #fffbeb; border: 1px solid #fde68a; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; color: #b45309;">
+                  style="display: none; background: #ffeb3b; border: 2px solid #f57f17; padding: 2px 8px; border-radius: 6px; font-size: 13px; font-weight: 900; color: #b45309; box-shadow: 0 0 8px rgba(245,127,23,0.4); text-transform: uppercase; letter-spacing: 0.5px;">
                   💊 Prev Med: ₹ <span id="medPendingValue">0</span>
                 </div>
                 <div id="smartHint"
-                  style="font-size: 10px; font-weight: 800; padding: 2px 6px; display: none; color: #0369a1; background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 4px;">
+                  style="font-size: 12px; font-weight: 900; padding: 2px 8px; display: none; color: #0369a1; background: #e0f2fe; border: 1px solid #7dd3fc; border-radius: 6px; box-shadow: 0 2px 4px rgba(3,105,161,0.15); letter-spacing: 0.5px;">
                 </div>
               </div>
             </div>
@@ -474,6 +474,13 @@
                       style="width:13px; height:13px; cursor:pointer; accent-color:#b91c1c; flex-shrink:0; margin:0;">
                     Left w/o Treatment
                   </label>
+                  <label for="paymentOnly"
+                    style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:11px; color:#ea580c; font-weight:800; text-transform:uppercase; white-space:nowrap; flex-shrink:0;">
+                    <input type="checkbox" id="paymentOnly" onchange="handlePaymentOnlyChange()"
+                      style="width:13px; height:13px; cursor:pointer; accent-color:#ea580c; flex-shrink:0; margin:0;">
+                    Pharmacy / Payment
+                  </label>
+                  <input type="text" id="paymentNote" placeholder="Note (Optional)" style="display:none; padding: 4px 8px; font-size: 10px; font-weight: 700; border: 1px solid #fdba74; border-radius: 4px; outline: none; width: 120px; color: #ea580c;">
                   <select id="patientBehavior" onchange="updateBehaviorDropdownColor(true)">
                     <option value="" selected>-- Behavior --</option>
                     <option value="Good">Good Behavior</option>
