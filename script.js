@@ -186,6 +186,49 @@ function calculateExpiryDate(days) {
   return formatDate(d);
 }
 
+// Flatpickr Calendar Variables
+let dateEntryCounts = {};
+let obsFlatpickrInstance = null;
+
+function updateDateEntryCounts(data) {
+  dateEntryCounts = {};
+  data.forEach(p => {
+    // Ignore empty/invalid rows
+    if (!p.patient_id && !p.checkup_id && parseFloat(p.payment_by_shehjar || 0) <= 0) return;
+    
+    // Ignore Doctor Settlements (as they are not patient entries)
+    const isSettlement = parseFloat(p.payment_by_shehjar || 0) > 0 && (!p.patient_id || String(p.patient_id).trim() === "");
+    if (isSettlement) return;
+
+    const isPharmacy = String(p.status || "").includes("Pharmacy / Payment") || String(p.visit || "").includes("Pharmacy / Payment");
+    
+    let pDateStr = p.date;
+    if (p.date) {
+      const parsedDate = new Date(p.date);
+      if (!isNaN(parsedDate)) {
+        pDateStr = formatDate(parsedDate);
+      }
+    }
+    
+    if (pDateStr) {
+      if (!dateEntryCounts[pDateStr]) {
+         dateEntryCounts[pDateStr] = { total: 0, checkups: 0, pharmacy: 0 };
+      }
+      dateEntryCounts[pDateStr].total++;
+      if (isPharmacy) {
+        dateEntryCounts[pDateStr].pharmacy++;
+      } else {
+        dateEntryCounts[pDateStr].checkups++;
+      }
+    }
+  });
+
+  // Re-draw flatpickr to show badges if instance exists
+  if (obsFlatpickrInstance) {
+    obsFlatpickrInstance.redraw();
+  }
+}
+
 // Initialize
 document.addEventListener("DOMContentLoaded", () => {
   if (sessionStorage.getItem("isLoggedIn") === "true") {
@@ -197,6 +240,63 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("defaultFee").value = defaultFee;
   document.getElementById("validityDays").value = validityDays;
+
+  // Initialize Flatpickr for Date Filter
+  obsFlatpickrInstance = flatpickr("#obsDateFilter", {
+    dateFormat: "Y-m-d",
+    onChange: function(selectedDates, dateStr, instance) {
+      renderObservationList(allPatients);
+    },
+    onDayCreate: function(dObj, dStr, fp, dayElem) {
+      if (dayElem.dateObj) {
+        const dateStrFormat = formatDate(dayElem.dateObj);
+        const counts = dateEntryCounts[dateStrFormat];
+        if (counts && counts.total > 0) {
+          // Highlight day base styles
+          dayElem.style.position = 'relative';
+          dayElem.style.fontWeight = 'bold';
+          dayElem.style.color = '#fff';
+          dayElem.style.border = 'none';
+          dayElem.style.transform = 'scale(0.85)';
+          
+          // Let Flatpickr keep its default circular border-radius
+          dayElem.style.borderRadius = '50%';
+
+          // Assign Colors based on Entry Types
+          if (counts.checkups > 0 && counts.pharmacy > 0) {
+            // Both checkups and pharmacy
+            dayElem.style.background = 'linear-gradient(135deg, #14b8a6 50%, #8b5cf6 50%)'; // Teal & Purple Split
+          } else if (counts.checkups > 0) {
+            // Only Checkups
+            dayElem.style.backgroundColor = '#14b8a6'; // Teal
+          } else {
+            // Only Pharmacy/Payment
+            dayElem.style.backgroundColor = '#8b5cf6'; // Purple
+          }
+
+          // Add Count Badge
+          const badge = document.createElement('span');
+          badge.innerHTML = counts.total;
+          badge.style.position = 'absolute';
+          badge.style.top = '-2px';
+          badge.style.right = '-2px';
+          badge.style.width = '14px';
+          badge.style.height = '14px';
+          badge.style.display = 'flex';
+          badge.style.alignItems = 'center';
+          badge.style.justifyContent = 'center';
+          badge.style.background = '#f59e0b'; // Amber badge
+          badge.style.color = 'white';
+          badge.style.borderRadius = '50%';
+          badge.style.fontSize = '9px';
+          badge.style.fontWeight = 'bold';
+          badge.style.boxShadow = '0 1px 2px rgba(0,0,0,0.3)';
+          badge.style.pointerEvents = 'none'; // Prevents badge from messing up hover/click events
+          dayElem.appendChild(badge);
+        }
+      }
+    }
+  });
 
   // Smart Align Inputs UX (Left default, Right on active/typing)
   document.addEventListener("focusin", function(e) {
@@ -340,6 +440,7 @@ function updateStats(data) {
   document.getElementById("statAdvance").innerText = `₹ ${globalAdvance}`;
   document.getElementById("statCollection").innerText = `₹ ${globalCollection}`;
 
+  updateDateEntryCounts(data);
   renderObservationList(data);
 }
 
