@@ -244,6 +244,50 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initialize Flatpickr for Date Filter
   obsFlatpickrInstance = flatpickr("#obsDateFilter", {
     dateFormat: "Y-m-d",
+    defaultDate: "today",
+    onReady: function(selectedDates, dateStr, instance) {
+      // Replicate native Chrome "Clear" and "Today" footer buttons
+      const footer = document.createElement("div");
+      footer.style.display = "flex";
+      footer.style.justifyContent = "space-between";
+      footer.style.padding = "8px 12px";
+      footer.style.borderTop = "1px solid #e2e8f0";
+      footer.style.background = "#f8fafc";
+      footer.style.borderBottomLeftRadius = "5px";
+      footer.style.borderBottomRightRadius = "5px";
+
+      const btnClear = document.createElement("button");
+      btnClear.textContent = "Clear";
+      btnClear.type = "button";
+      btnClear.style.color = "#0ea5e9";
+      btnClear.style.background = "transparent";
+      btnClear.style.border = "none";
+      btnClear.style.cursor = "pointer";
+      btnClear.style.fontWeight = "bold";
+      btnClear.style.fontSize = "13px";
+      btnClear.onclick = function() {
+        instance.clear();
+        instance.close();
+      };
+
+      const btnToday = document.createElement("button");
+      btnToday.textContent = "Today";
+      btnToday.type = "button";
+      btnToday.style.color = "#0ea5e9";
+      btnToday.style.background = "transparent";
+      btnToday.style.border = "none";
+      btnToday.style.cursor = "pointer";
+      btnToday.style.fontWeight = "bold";
+      btnToday.style.fontSize = "13px";
+      btnToday.onclick = function() {
+        instance.setDate(new Date(), true); // true triggers onChange
+        instance.close();
+      };
+
+      footer.appendChild(btnClear);
+      footer.appendChild(btnToday);
+      instance.calendarContainer.appendChild(footer);
+    },
     onChange: function(selectedDates, dateStr, instance) {
       renderObservationList(allPatients);
     },
