@@ -394,6 +394,9 @@ function renderObservationList(data) {
     // Exclude empty rows, doctor settlements, or direct patient tally payments (which lack checkup_id/token_no)
     if (!p.checkup_id || String(p.checkup_id).trim() === "") return false;
     
+    // Exclude 'Pharmacy / Payment' entries
+    if (String(p.status || "").includes("Pharmacy / Payment") || String(p.visit || "").includes("Pharmacy / Payment")) return false;
+    
     let pDateStr = p.date;
     if (p.date) {
       const parsedDate = new Date(p.date);
@@ -467,7 +470,8 @@ function renderObservationList(data) {
     const obsBehavior = behMatch ? behMatch[2] : null;
 
     let badgeClass;
-    if (obsCleanStatus === "Left Clinic") badgeClass = 'status-left-clinic';
+    if (obsCleanStatus.includes("Pharmacy / Payment")) badgeClass = 'status-payment';
+    else if (obsCleanStatus === "Left Clinic") badgeClass = 'status-left-clinic';
     else if (obsCleanStatus === "Refunded-->Extra-visit") badgeClass = 'status-refunded';
     else if (obsCleanStatus === "Under Observation") badgeClass = 'status-observation';
     else if (isPending) badgeClass = 'status-pending';
@@ -693,25 +697,35 @@ function applyPatientHistory(lastRecord) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  let expiryDateStr = lastRecord.checkup_duration_validity || lastRecord.duration;
+  // Find the most recent record that is NOT a payment entry
+  let lastCheckupRecord = null;
+  for (let p of patientHistory) {
+    if (!String(p.status || "").includes("Pharmacy / Payment") && !String(p.visit || "").includes("Pharmacy / Payment")) {
+      lastCheckupRecord = p;
+      break;
+    }
+  }
+  lastCheckupRecord = lastCheckupRecord || lastRecord; // Fallback
+
+  let expiryDateStr = lastCheckupRecord.checkup_duration_validity || lastCheckupRecord.duration;
   let expiryDate = new Date(expiryDateStr);
   let isExpired = today > expiryDate || isNaN(expiryDate.getTime());
 
-  const rawStatus = String(lastRecord.status || "");
+  const rawStatus = String(lastCheckupRecord.status || "");
   const cleanStatus = rawStatus.replace(/\s*\(((Good|Bad)(?::\s*([^)]*?))?)\)$/, "").trim();
 
   // Find the last COMPLETED record to determine the cycle state robustly
   let lastCompletedRecord = null;
   for (let p of patientHistory) {
     const pSt = String(p.status || "").replace(/\s*\(((Good|Bad)(?::\s*([^)]*?))?)\)$/, "").trim();
-    if (pSt !== "Left Without Checkup" && pSt !== "Under Observation" && pSt !== "Registered") {
+    if (pSt !== "Left Without Checkup" && pSt !== "Under Observation" && pSt !== "Registered" && !pSt.includes("Pharmacy / Payment")) {
       lastCompletedRecord = p;
       break;
     }
   }
 
-  // Fallback to lastRecord if they never completed a visit
-  const referenceRecord = lastCompletedRecord || lastRecord;
+  // Fallback to lastCheckupRecord if they never completed a visit
+  const referenceRecord = lastCompletedRecord || lastCheckupRecord;
 
   expiryDateStr = referenceRecord.checkup_duration_validity || referenceRecord.duration;
   expiryDate = new Date(expiryDateStr);
@@ -728,37 +742,41 @@ function applyPatientHistory(lastRecord) {
       hintEl.style.display = "block";
       hintEl.innerHTML = `ℹ️ Resuming Visit 2 (Previously Left Without Treatment).`;
     } else {
-      document.getElementById("activeCheckupId").value = lastRecord.checkup_id || "";
-      document.getElementById("displayCheckupId").value = lastRecord.checkup_id || "";
+      document.getElementById("activeCheckupId").value = lastCheckupRecord.checkup_id || "";
+      document.getElementById("displayCheckupId").value = lastCheckupRecord.checkup_id || "";
       document.getElementById("visit").value = "Visit 1";
-      document.getElementById("validUpto").value = lastRecord.checkup_duration_validity || calculateExpiryDate(validityDays);
+      document.getElementById("validUpto").value = lastCheckupRecord.checkup_duration_validity || calculateExpiryDate(validityDays);
       document.getElementById("fee").value = localStorage.getItem("defaultFee") || "300";
       hintEl.style.display = "block";
       hintEl.innerHTML = `ℹ️ Resuming Visit 1 (Previously Left Without Treatment).`;
     }
   }
   // Valid Session for Visit 2 (Normal Flow)
-  else if (!isExpired && lastRecord.visit === "Visit 1") {
-    document.getElementById("activeCheckupId").value = lastRecord.checkup_id;
-    document.getElementById("displayCheckupId").value = lastRecord.checkup_id;
+  else if (!isExpired && lastCheckupRecord.visit === "Visit 1") {
+    document.getElementById("activeCheckupId").value = lastCheckupRecord.checkup_id;
+    document.getElementById("displayCheckupId").value = lastCheckupRecord.checkup_id;
     document.getElementById("visit").value = "Visit 2";
     document.getElementById("validUpto").value = expiryDateStr; // Same expiry
     document.getElementById("fee").value = 0; // Visit 2 is free
 
     hintEl.style.display = "block";
-    hintEl.innerHTML = `✅ ID: ${lastRecord.checkup_id} - Session Valid till ${expiryDateStr}. Proceed to Visit 2.`;
+    hintEl.innerHTML = `✅ ID: ${lastCheckupRecord.checkup_id} - Session Valid till ${expiryDateStr}. Proceed to Visit 2.`;
   }
   // Expired or New Cycle (Normal Flow)
   else {
     document.getElementById("activeCheckupId").value = "";
-    const nextChkId = patientHistory.length > 0 ? (Math.max(...patientHistory.map(p => parseInt(p.checkup_id) || 0)) + 1) : 1;
+    
+    // We only find the max checkup_id among actual checkups to avoid using "-" from payment entries
+    const validCheckups = patientHistory.filter(p => p.checkup_id && p.checkup_id !== "-");
+    const nextChkId = validCheckups.length > 0 ? (Math.max(...validCheckups.map(p => parseInt(p.checkup_id) || 0)) + 1) : 1;
+    
     document.getElementById("displayCheckupId").value = String(nextChkId);
     document.getElementById("visit").value = "Visit 1";
     document.getElementById("validUpto").value = calculateExpiryDate(validityDays);
     document.getElementById("fee").value = localStorage.getItem("defaultFee") || "300";
 
     hintEl.style.display = "block";
-    if (isExpired && lastRecord.visit === "Visit 1") {
+    if (isExpired && lastCheckupRecord.visit === "Visit 1") {
       hintEl.innerHTML = `⚠️ Previous checkup expired on ${expiryDateStr}. Starting new checkup cycle.`;
     } else {
       hintEl.innerHTML = `🆕 Previous checkup cycle complete. Starting new checkup cycle.`;
@@ -1276,8 +1294,9 @@ async function addPatient() {
   const patientId = document.getElementById("activePatientId").value;
   const checkupId = document.getElementById("activeCheckupId").value;
   const doctor = document.getElementById("doctor").value;
+  const isPaymentOnly = document.getElementById("paymentOnly") ? document.getElementById("paymentOnly").checked : false;
 
-  if (!doctor || doctor.trim() === "") {
+  if (!isPaymentOnly && (!doctor || doctor.trim() === "")) {
     alert("Please select the doctor before saving.");
     return;
   }
@@ -1313,7 +1332,9 @@ async function addPatient() {
   if (finalPatientId === "") {
     finalPatientId = allPatients.length > 0 ? (Math.max(...allPatients.map(p => parseInt(p.patient_id) || 0)) + 1) : 1;
   }
-  if (finalCheckupId === "") {
+  if (isPaymentOnly) {
+    finalCheckupId = "-";
+  } else if (finalCheckupId === "") {
     const patientHistory = allPatients.filter(p => String(p.patient_id) === String(finalPatientId));
     finalCheckupId = patientHistory.length > 0 ? (Math.max(...patientHistory.map(p => parseInt(p.checkup_id) || 0)) + 1) : 1;
   }
@@ -1333,7 +1354,7 @@ async function addPatient() {
   });
   const latestRecord = latestByPatient[finalPatientId];
 
-  if (latestRecord && String(latestRecord.status || "").trim().startsWith("Under Observation")) {
+  if (!isPaymentOnly && latestRecord && String(latestRecord.status || "").trim().startsWith("Under Observation")) {
     const origChk = document.getElementById("originalCheckupId").value || finalCheckupId;
     const origVis = document.getElementById("originalVisit").value || document.getElementById("visit").value;
     const editingRowIndex = formMode === "update" ? allPatients.find(p => p.patient_id == finalPatientId && p.checkup_id == origChk && p.visit == origVis)?.row_index : null;
@@ -1345,7 +1366,16 @@ async function addPatient() {
   }
 
   let finalStatus = "";
-  if (isObservation) {
+  if (isPaymentOnly) {
+    const pNote = document.getElementById("paymentNote") ? document.getElementById("paymentNote").value.trim() : "";
+    if (pNote) {
+      finalStatus = "Pharmacy / Payment (" + pNote + ")";
+      document.getElementById("visit").value = "Pharmacy / Payment (" + pNote + ")";
+    } else {
+      finalStatus = "Pharmacy / Payment";
+      document.getElementById("visit").value = "Pharmacy / Payment";
+    }
+  } else if (isObservation) {
     finalStatus = "Under Observation";
   } else if (isLeftClinic) {
     finalStatus = "Left Clinic";
@@ -1362,17 +1392,22 @@ async function addPatient() {
   // Calculate Daily Token Number — per doctor per day
   let finalTokenNo = document.getElementById("tokenNo").value || "";
   if (formMode === "add") {
-    const todayStr = formatDate(new Date());
-    const selectedDoctor = document.getElementById("doctor").value || "";
-    
-    // Get all tokens for today for the SAME doctor only
-    const doctorTodaysTokens = allPatients
-      .filter(p => p.date === todayStr && p.doctor === selectedDoctor && p.token_no && !isNaN(parseInt(p.token_no)))
-      .map(p => parseInt(p.token_no));
+    if (isPaymentOnly) {
+      finalTokenNo = "-";
+      document.getElementById("tokenNo").value = finalTokenNo;
+    } else {
+      const todayStr = formatDate(new Date());
+      const selectedDoctor = document.getElementById("doctor").value || "";
       
-    let nextToken = doctorTodaysTokens.length > 0 ? Math.max(...doctorTodaysTokens) + 1 : 1;
-    finalTokenNo = nextToken;
-    document.getElementById("tokenNo").value = finalTokenNo;
+      // Get all tokens for today for the SAME doctor only
+      const doctorTodaysTokens = allPatients
+        .filter(p => p.date === todayStr && p.doctor === selectedDoctor && p.token_no && !isNaN(parseInt(p.token_no)))
+        .map(p => parseInt(p.token_no));
+        
+      let nextToken = doctorTodaysTokens.length > 0 ? Math.max(...doctorTodaysTokens) + 1 : 1;
+      finalTokenNo = nextToken;
+      document.getElementById("tokenNo").value = finalTokenNo;
+    }
   }
 
   // Get exact row_index for foolproof update
@@ -1417,7 +1452,7 @@ async function addPatient() {
     paid: parseFloat(document.getElementById("paid").value) || 0,
     balance: parseFloat(document.getElementById("balance").value) || 0,
     status: finalStatus,  // e.g., "Left Clinic (Bad)" or "Left Clinic"
-    duration: document.getElementById("validUpto").value,
+    duration: isPaymentOnly ? "-" : document.getElementById("validUpto").value,
     action: document.getElementById("formMode").value,
     original_checkup_id: document.getElementById("originalCheckupId").value,
     original_visit: document.getElementById("originalVisit").value,
@@ -1560,7 +1595,8 @@ function renderTable(data, resetPage = true) {
     const cleanStatus = behaviorMatch ? rawStatus.replace(/\s*\(((Good|Bad)(?::\s*([^)]*?))?)\)$/, "").trim() : rawStatus;
 
     let badgeClass;
-    if (cleanStatus === "Left Clinic") badgeClass = 'status-left-clinic';
+    if (cleanStatus.includes("Pharmacy / Payment")) badgeClass = 'status-payment';
+    else if (cleanStatus === "Left Clinic") badgeClass = 'status-left-clinic';
     else if (cleanStatus === "Refunded-->Extra-visit") badgeClass = 'status-refunded';
     else if (cleanStatus === "Under Observation") badgeClass = 'status-observation';
     else if (isPending) badgeClass = 'status-pending';
@@ -1669,6 +1705,11 @@ function clearForm(keepId = false) {
 
   // Reset Default Values
   
+  const paymentOnly = document.getElementById("paymentOnly");
+  if (paymentOnly) paymentOnly.checked = false;
+  const doctorSelectClear = document.getElementById("doctor");
+  if (doctorSelectClear) doctorSelectClear.disabled = false;
+
   document.getElementById("underObservation").checked = true;
   handleObservationChange();
   document.getElementById("visit").value = "Visit 1";
@@ -1727,7 +1768,7 @@ function clearForm(keepId = false) {
     // Only refresh Token No since we are keeping the manually typed Patient ID
     const todayStr = formatDate(new Date());
     const todaysTokens = allPatients
-      .filter(p => p.date === todayStr && p.token_no)
+      .filter(p => p.date === todayStr && p.token_no && !isNaN(parseInt(p.token_no)))
       .map(p => parseInt(p.token_no));
     document.getElementById("tokenNo").value = todaysTokens.length > 0 ? Math.max(...todaysTokens) + 1 : 1;
   }
@@ -1800,7 +1841,7 @@ function refreshPreviewIds() {
   // Find smallest available token for today
   const todayStr = formatDate(new Date());
   const todaysTokens = allPatients
-    .filter(p => p.date === todayStr && p.token_no)
+    .filter(p => p.date === todayStr && p.token_no && !isNaN(parseInt(p.token_no)))
     .map(p => parseInt(p.token_no));
     
   let nextToken = todaysTokens.length > 0 ? Math.max(...todaysTokens) + 1 : 1;
@@ -1921,6 +1962,128 @@ function handleObservationChange() {
   }
   calculateBalance();
   calculateMedicineBalance();
+}
+
+// Handle Payment Only checkbox change
+function handlePaymentOnlyChange() {
+  const isPaymentOnly = document.getElementById("paymentOnly").checked;
+  const visitInput = document.getElementById("visit");
+  const feeInput = document.getElementById("fee");
+  const doctorSelect = document.getElementById("doctor");
+  const paymentNote = document.getElementById("paymentNote");
+  
+  if (isPaymentOnly) {
+    if (paymentNote) paymentNote.style.display = "inline-block";
+    
+    // Uncheck conflicting checkboxes
+    const obsCheckbox = document.getElementById("underObservation");
+    if (obsCheckbox && obsCheckbox.checked) { obsCheckbox.checked = false; handleObservationChange(); }
+    
+    const leftClinicCheckbox = document.getElementById("leftClinic");
+    if (leftClinicCheckbox) leftClinicCheckbox.checked = false;
+    
+    const leftWithout = document.getElementById("leftWithoutCheckup");
+    if (leftWithout && leftWithout.checked) { leftWithout.checked = false; handleLeftWithoutCheckupChange(); }
+    
+    const extraVisitCheckbox = document.getElementById("isExtraVisit");
+    if (extraVisitCheckbox && extraVisitCheckbox.checked) { extraVisitCheckbox.checked = false; handleExtraVisitCheckbox(); }
+
+    const anotherClinicCheckbox = document.getElementById("fromAnotherClinic");
+    if (anotherClinicCheckbox) anotherClinicCheckbox.checked = false;
+
+    // Store original values
+    if (!visitInput.dataset.originalVisit) visitInput.dataset.originalVisit = visitInput.value;
+    if (!feeInput.dataset.originalFee) feeInput.dataset.originalFee = feeInput.value;
+    if (!doctorSelect.dataset.originalDoctor) doctorSelect.dataset.originalDoctor = doctorSelect.value;
+    
+    const tokenNoInput = document.getElementById("tokenNo");
+    if (tokenNoInput) {
+      if (!tokenNoInput.dataset.originalToken) tokenNoInput.dataset.originalToken = tokenNoInput.value;
+      tokenNoInput.value = "-";
+      tokenNoInput.disabled = true;
+    }
+
+    const checkupIdInput = document.getElementById("displayCheckupId");
+    if (checkupIdInput) {
+      if (!checkupIdInput.dataset.originalCheckup) checkupIdInput.dataset.originalCheckup = checkupIdInput.value;
+      checkupIdInput.value = "-";
+      checkupIdInput.disabled = true;
+    }
+
+    const validUptoInput = document.getElementById("validUpto");
+    if (validUptoInput) {
+      if (!validUptoInput.dataset.originalDate) validUptoInput.dataset.originalDate = validUptoInput.value;
+      validUptoInput.value = "";
+      validUptoInput.disabled = true;
+    }
+
+    visitInput.value = "Pharmacy / Payment";
+    feeInput.value = "0";
+    
+    // Disable doctor select
+    doctorSelect.value = "";
+    doctorSelect.disabled = true;
+    
+    calculateBalance();
+  } else {
+    if (paymentNote) {
+      paymentNote.style.display = "none";
+      paymentNote.value = "";
+    }
+    
+    // Restore visit type
+    if (visitInput.dataset.originalVisit) {
+      visitInput.value = visitInput.dataset.originalVisit;
+      delete visitInput.dataset.originalVisit;
+    } else {
+      visitInput.value = "Visit 1";
+    }
+    
+    // Restore fee
+    if (feeInput.dataset.originalFee) {
+      feeInput.value = feeInput.dataset.originalFee;
+      delete feeInput.dataset.originalFee;
+    } else {
+      handleVisitTypeInput();
+    }
+    
+    // Restore doctor
+    if (doctorSelect.dataset.originalDoctor) {
+      doctorSelect.value = doctorSelect.dataset.originalDoctor;
+      delete doctorSelect.dataset.originalDoctor;
+    }
+    doctorSelect.disabled = false;
+
+    // Restore token, checkup id, and valid date
+    const tokenNoInput = document.getElementById("tokenNo");
+    if (tokenNoInput) {
+      if (tokenNoInput.dataset.originalToken) {
+        tokenNoInput.value = tokenNoInput.dataset.originalToken;
+        delete tokenNoInput.dataset.originalToken;
+      }
+      tokenNoInput.disabled = false;
+    }
+
+    const checkupIdInput = document.getElementById("displayCheckupId");
+    if (checkupIdInput) {
+      if (checkupIdInput.dataset.originalCheckup) {
+        checkupIdInput.value = checkupIdInput.dataset.originalCheckup;
+        delete checkupIdInput.dataset.originalCheckup;
+      }
+      checkupIdInput.disabled = false;
+    }
+
+    const validUptoInput = document.getElementById("validUpto");
+    if (validUptoInput) {
+      if (validUptoInput.dataset.originalDate) {
+        validUptoInput.value = validUptoInput.dataset.originalDate;
+        delete validUptoInput.dataset.originalDate;
+      }
+      validUptoInput.disabled = false;
+    }
+    
+    calculateBalance();
+  }
 }
 
 // Handle Left Clinic checkbox change
@@ -2292,6 +2455,9 @@ function renderDoctorTally() {
   const filtered = allPatients.filter(p => {
     // Exclude patient tally payments from doctor tally
     if (String(p.visit || "").toLowerCase() === "payment" && p.payment_by_shehjar === 0) return false;
+
+    // Exclude Pharmacy / Payment entries from doctor tally
+    if (String(p.visit || "").includes("Pharmacy / Payment") || String(p.status || "").includes("Pharmacy / Payment")) return false;
 
     const matchDoc = fDoc === "" || String(p.doctor || "").toLowerCase().trim() === fDoc;
     const matchFrom = fFrom === "" || p.date >= fFrom;
