@@ -10,7 +10,7 @@ let allPatients = [];
 let isPreviewMode = true; // true = Patient ID field shows next auto-generated preview ID
 
 // Override Native Alert with Custom Sweet Popup
-window.alert = function(message) {
+window.alert = function (message) {
   document.getElementById('customAlertMessage').innerText = message;
   const modal = document.getElementById('customAlertModal');
   const box = document.getElementById('customAlertBox');
@@ -32,15 +32,15 @@ function closeCustomAlert() {
 }
 
 // Override Native Confirm with Custom Sweet Popup (Async)
-window.customConfirmAsync = function(message) {
+window.customConfirmAsync = function (message) {
   return new Promise((resolve) => {
     document.getElementById('customConfirmMessage').innerText = message;
     const modal = document.getElementById('customConfirmModal');
     const box = document.getElementById('customConfirmBox');
-    
+
     const btnCancel = document.getElementById('btnCustomConfirmCancel');
     const btnOk = document.getElementById('btnCustomConfirmOk');
-    
+
     const cleanup = () => {
       btnCancel.onclick = null;
       btnOk.onclick = null;
@@ -70,18 +70,18 @@ window.customConfirmAsync = function(message) {
 };
 
 // Custom Prompt Popup (Async)
-window.customPromptAsync = function(message) {
+window.customPromptAsync = function (message) {
   return new Promise((resolve) => {
     document.getElementById('customPromptMessage').innerText = message;
     const modal = document.getElementById('customPromptModal');
     const box = document.getElementById('customPromptBox');
     const input = document.getElementById('customPromptInput');
-    
+
     input.value = '';
-    
+
     const btnCancel = document.getElementById('btnCustomPromptCancel');
     const btnOk = document.getElementById('btnCustomPromptOk');
-    
+
     const cleanup = () => {
       btnCancel.onclick = null;
       btnOk.onclick = null;
@@ -109,7 +109,7 @@ window.customPromptAsync = function(message) {
       box.style.transform = 'scale(1)';
       input.focus();
     }, 10);
-    
+
     input.onkeydown = (e) => {
       if (e.key === 'Enter') {
         btnOk.click();
@@ -119,18 +119,18 @@ window.customPromptAsync = function(message) {
 };
 
 // Custom Behavior Prompt Popup (Async)
-window.behaviorPromptAsync = function(message) {
+window.behaviorPromptAsync = function (message) {
   return new Promise((resolve) => {
     document.getElementById('behaviorPromptMessage').innerText = message;
     const modal = document.getElementById('behaviorPromptModal');
     const box = document.getElementById('behaviorPromptBox');
     const input = document.getElementById('behaviorPromptInput');
-    
+
     input.value = '';
-    
+
     const btnCancel = document.getElementById('btnBehaviorPromptCancel');
     const btnOk = document.getElementById('btnBehaviorPromptOk');
-    
+
     const cleanup = () => {
       btnCancel.onclick = null;
       btnOk.onclick = null;
@@ -158,7 +158,7 @@ window.behaviorPromptAsync = function(message) {
       box.style.transform = 'scale(1)';
       input.focus();
     }, 10);
-    
+
     input.onkeydown = (e) => {
       if (e.key === 'Enter') {
         btnOk.click();
@@ -195,13 +195,13 @@ function updateDateEntryCounts(data) {
   data.forEach(p => {
     // Ignore empty/invalid rows
     if (!p.patient_id && !p.checkup_id && parseFloat(p.payment_by_shehjar || 0) <= 0) return;
-    
+
     // Ignore Doctor Settlements (as they are not patient entries)
     const isSettlement = parseFloat(p.payment_by_shehjar || 0) > 0 && (!p.patient_id || String(p.patient_id).trim() === "");
     if (isSettlement) return;
 
     const isPharmacy = String(p.status || "").includes("Pharmacy / Payment") || String(p.visit || "").includes("Pharmacy / Payment");
-    
+
     let pDateStr = p.date;
     if (p.date) {
       const parsedDate = new Date(p.date);
@@ -209,10 +209,10 @@ function updateDateEntryCounts(data) {
         pDateStr = formatDate(parsedDate);
       }
     }
-    
+
     if (pDateStr) {
       if (!dateEntryCounts[pDateStr]) {
-         dateEntryCounts[pDateStr] = { total: 0, checkups: 0, pharmacy: 0 };
+        dateEntryCounts[pDateStr] = { total: 0, checkups: 0, pharmacy: 0 };
       }
       dateEntryCounts[pDateStr].total++;
       if (isPharmacy) {
@@ -245,7 +245,7 @@ document.addEventListener("DOMContentLoaded", () => {
   obsFlatpickrInstance = flatpickr("#obsDateFilter", {
     dateFormat: "Y-m-d",
     defaultDate: "today",
-    onReady: function(selectedDates, dateStr, instance) {
+    onReady: function (selectedDates, dateStr, instance) {
       // Replicate native Chrome "Clear" and "Today" footer buttons
       const footer = document.createElement("div");
       footer.style.display = "flex";
@@ -265,7 +265,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btnClear.style.cursor = "pointer";
       btnClear.style.fontWeight = "bold";
       btnClear.style.fontSize = "13px";
-      btnClear.onclick = function() {
+      btnClear.onclick = function () {
         instance.clear();
         instance.close();
       };
@@ -279,7 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btnToday.style.cursor = "pointer";
       btnToday.style.fontWeight = "bold";
       btnToday.style.fontSize = "13px";
-      btnToday.onclick = function() {
+      btnToday.onclick = function () {
         instance.setDate(new Date(), true); // true triggers onChange
         instance.close();
       };
@@ -288,10 +288,10 @@ document.addEventListener("DOMContentLoaded", () => {
       footer.appendChild(btnToday);
       instance.calendarContainer.appendChild(footer);
     },
-    onChange: function(selectedDates, dateStr, instance) {
+    onChange: function (selectedDates, dateStr, instance) {
       renderObservationList(allPatients);
     },
-    onDayCreate: function(dObj, dStr, fp, dayElem) {
+    onDayCreate: function (dObj, dStr, fp, dayElem) {
       if (dayElem.dateObj) {
         const dateStrFormat = formatDate(dayElem.dateObj);
         const counts = dateEntryCounts[dateStrFormat];
@@ -302,7 +302,7 @@ document.addEventListener("DOMContentLoaded", () => {
           dayElem.style.color = '#fff';
           dayElem.style.border = 'none';
           dayElem.style.transform = 'scale(0.85)';
-          
+
           // Let Flatpickr keep its default circular border-radius
           dayElem.style.borderRadius = '50%';
 
@@ -343,13 +343,13 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Smart Align Inputs UX (Left default, Right on active/typing)
-  document.addEventListener("focusin", function(e) {
+  document.addEventListener("focusin", function (e) {
     if (e.target.tagName === "INPUT" && e.target.type !== "checkbox" && e.target.type !== "hidden") {
       e.target.classList.add("right-aligned");
     }
   });
 
-  document.addEventListener("focusout", function(e) {
+  document.addEventListener("focusout", function (e) {
     if (e.target.tagName === "INPUT" && e.target.type !== "checkbox" && e.target.type !== "hidden") {
       if (!e.target.value || e.target.value === "0" || e.target.value == 0) {
         e.target.classList.remove("right-aligned");
@@ -359,7 +359,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  document.addEventListener("input", function(e) {
+  document.addEventListener("input", function (e) {
     if (e.target.tagName === "INPUT" && e.target.type !== "checkbox" && e.target.type !== "hidden") {
       e.target.classList.add("right-aligned");
     }
@@ -368,7 +368,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 async function checkLogin() {
   const now = Date.now();
-  
+
   // Brute-force lockout check
   if (_loginLockedUntil > now) {
     const secsLeft = Math.ceil((_loginLockedUntil - now) / 1000);
@@ -466,7 +466,7 @@ function updateStats(data) {
   });
 
   const netBalance = globalTotalFee - globalCollection;
-  
+
   let globalPending = 0;
   let globalAdvance = 0;
 
@@ -517,7 +517,7 @@ function renderObservationList(data) {
         })
         .map(p => p.doctor.trim())
     )].sort();
-    
+
     obsDoctorFilterEl.innerHTML = `<option value="">All Doctors</option>`;
     doctorsOnDate.forEach(doc => {
       const opt = document.createElement("option");
@@ -538,10 +538,10 @@ function renderObservationList(data) {
   const obsPatients = data.filter(p => {
     // Exclude empty rows, doctor settlements, or direct patient tally payments (which lack checkup_id/token_no)
     if (!p.checkup_id || String(p.checkup_id).trim() === "") return false;
-    
+
     // Exclude 'Pharmacy / Payment' entries
     if (String(p.status || "").includes("Pharmacy / Payment") || String(p.visit || "").includes("Pharmacy / Payment")) return false;
-    
+
     let pDateStr = p.date;
     if (p.date) {
       const parsedDate = new Date(p.date);
@@ -572,25 +572,25 @@ function renderObservationList(data) {
 
   const paidFilterEl = document.getElementById("obsPaidFilter");
   const paidFilterVal = paidFilterEl ? paidFilterEl.value : "all";
-  
+
   let finalObsPatients = obsPatients.filter(p => {
     if (paidFilterVal === "all") return true;
     const visitStr = String(p.visit || "").toLowerCase().trim();
     const hasVisit1 = visitStr.includes("visit 1") || visitStr.includes("visit1");
     const isExtra = visitStr.includes("extra");
-    
+
     if (paidFilterVal === "paid") return hasVisit1 && !isExtra;
     if (paidFilterVal === "free") return !hasVisit1 || isExtra;
     return true;
   });
 
   countEl.innerText = finalObsPatients.length;
-  
+
   let totalPaidForDay = 0;
   finalObsPatients.forEach(p => {
     totalPaidForDay += parseFloat(p.paid) || 0;
   });
-  
+
   const totalPaidEl = document.getElementById("obsTotalPaid");
   if (totalPaidEl) {
     totalPaidEl.innerText = `₹ ${totalPaidForDay}`;
@@ -622,7 +622,7 @@ function renderObservationList(data) {
     else if (isPending) badgeClass = 'status-pending';
     else if (isAdvance) badgeClass = 'status-advance';
     else badgeClass = 'status-done';
-    
+
     let rowStyle = (obsCleanStatus === "Left Clinic") ? "background-color: #bbf7d0;" : "";
     if (obsBehavior === "Bad") rowStyle = "background-color: #fecaca; color: #7f1d1d;";
 
@@ -639,7 +639,7 @@ function renderObservationList(data) {
       `;
       lastDoctor = currentDoctor;
     }
-    
+
     html += `
       <tr style="${rowStyle}">
         <td style="background: #fffbeb; text-align: center; border-right: 1px solid #fde68a;">
@@ -728,7 +728,7 @@ function setDoctorPaidStatus(isPaid) {
   uncheckObservation();
   const feeInput = document.getElementById("fee");
   const paidInput = document.getElementById("paid");
-  
+
   if (isPaid) {
     paidInput.value = feeInput.value || 0;
   } else {
@@ -742,7 +742,7 @@ function setMedicinePaidStatus(isPaid) {
   const prevMed = parseFloat(document.getElementById("prevMedBal").value) || 0;
   const mFee = parseFloat(document.getElementById("medicineFee").value) || 0;
   const paidInput = document.getElementById("medicinePaid");
-  
+
   if (isPaid) {
     paidInput.value = prevMed + mFee;
   } else {
@@ -910,11 +910,11 @@ function applyPatientHistory(lastRecord) {
   // Expired or New Cycle (Normal Flow)
   else {
     document.getElementById("activeCheckupId").value = "";
-    
+
     // We only find the max checkup_id among actual checkups to avoid using "-" from payment entries
     const validCheckups = patientHistory.filter(p => p.checkup_id && p.checkup_id !== "-");
     const nextChkId = validCheckups.length > 0 ? (Math.max(...validCheckups.map(p => parseInt(p.checkup_id) || 0)) + 1) : 1;
-    
+
     document.getElementById("displayCheckupId").value = String(nextChkId);
     document.getElementById("visit").value = "Visit 1";
     document.getElementById("validUpto").value = calculateExpiryDate(validityDays);
@@ -933,7 +933,7 @@ function applyPatientHistory(lastRecord) {
   // Check 'Under Observation' by default when entry is started
   document.getElementById("underObservation").checked = true;
   handleObservationChange();
-  
+
   // Also check behavior for the auto-populated doctor
   setTimeout(() => { checkPatientBehavior(); }, 100);
 }
@@ -1000,8 +1000,8 @@ function checkPatientBehavior() {
   }
 
   // Find the MOST RECENT entry for this patient with THIS specific doctor
-  const recordsWithDoc = allPatients.filter(p => 
-    String(p.patient_id) === String(activePatientId) && 
+  const recordsWithDoc = allPatients.filter(p =>
+    String(p.patient_id) === String(activePatientId) &&
     String(p.doctor) === String(doctor)
   );
 
@@ -1089,7 +1089,7 @@ function handleVisitTypeInput() {
   } else if (visitVal.includes("visit 2") || visitVal.includes("extra") || visitVal.includes("another clinic")) {
     feeInput.value = 0;
   }
-  
+
   document.getElementById("visit").title = document.getElementById("visit").value;
   calculateBalance();
 }
@@ -1125,7 +1125,7 @@ function handleExtraVisitCheckbox() {
       // Sort history descending by checkup_id
       const sortedHistory = [...history].sort((a, b) => parseInt(b.checkup_id) - parseInt(a.checkup_id));
       checkupId = sortedHistory[0].checkup_id;
-      
+
       const formMode = document.getElementById("formMode").value;
       const origChk = parseInt(document.getElementById("originalCheckupId").value) || 0;
       const origVis = document.getElementById("originalVisit").value;
@@ -1144,13 +1144,13 @@ function handleExtraVisitCheckbox() {
     const mode = document.getElementById("formMode").value;
     const origVis = document.getElementById("originalVisit").value;
     document.getElementById("formMode").value = mode || "add";
-    
+
     document.getElementById("btnText").innerText = (document.getElementById("formMode").value === "update") ? "Update Entry" : "Save Entry";
-    
+
     // Calculate the Extra Visit Name (Extra Visit 1, Extra Visit 2, etc.)
     const isAnother = document.getElementById("fromAnotherClinic")?.checked;
     const baseName = isAnother ? "Patient from Another Clinic - Extra Visit" : "Extra Visit";
-    
+
     let extraVisitName = `${baseName} 1`;
     if (mode === "update" && origVis.toLowerCase().includes("extra visit")) {
       extraVisitName = origVis; // Keep the same name if we are already editing this specific Extra Visit
@@ -1178,7 +1178,7 @@ function handleExtraVisitCheckbox() {
     paidInput.disabled = false;
     paidInput.value = "";
     hintEl.style.display = "none";
-    
+
     const mode = document.getElementById("formMode").value;
     const patientId = document.getElementById("activePatientId").value;
     const origChk = document.getElementById("originalCheckupId").value;
@@ -1229,7 +1229,7 @@ function handleIdInput() {
     if (advanceAlert) advanceAlert.style.display = "none";
     const extraVisitAlertHide = document.getElementById("extraVisitAlert");
     if (extraVisitAlertHide) extraVisitAlertHide.style.display = "none";
-    
+
     document.getElementById("activePatientId").value = "";
     document.getElementById("displayCheckupId").value = "1";
     document.getElementById("fee").value = localStorage.getItem("defaultFee") || "300";
@@ -1300,9 +1300,9 @@ async function handleSearchInput(field) {
     return;
   }
 
-  if (inputVal.length < 2) { 
+  if (inputVal.length < 2) {
     if (dropdown) dropdown.style.display = "none";
-    return; 
+    return;
   }
 
   // Special handling for address field: only suggest unique addresses, do not auto-fill entire patient
@@ -1338,7 +1338,7 @@ async function handleSearchInput(field) {
   allPatients.forEach(p => {
     const matchName = p.name && p.name.toLowerCase().includes(inputVal);
     const matchPhone = p.phone && String(p.phone).toLowerCase().includes(inputVal);
-    
+
     if (matchName || matchPhone) {
       if (!seenIds.has(p.patient_id)) {
         seenIds.add(p.patient_id);
@@ -1363,7 +1363,7 @@ async function handleSearchInput(field) {
     });
     dropdown.innerHTML = html;
     dropdown.style.display = "block";
-    
+
     // Always consider it a new patient while typing until they explicitly select one
     if (field === 'name') {
       showPatientBadge("new");
@@ -1384,7 +1384,7 @@ function selectAddressFromDropdown(addr) {
 
 function selectPatientFromDropdown(patientId, field) {
   if (dropdownHideTimeout) clearTimeout(dropdownHideTimeout);
-  
+
   // Find patient history
   const history = allPatients.filter(p => String(p.patient_id) === String(patientId));
   if (history.length > 0) {
@@ -1392,7 +1392,7 @@ function selectPatientFromDropdown(patientId, field) {
     calculateBalance();
     showPatientBadge("old"); // Explicitly selected an existing patient
   }
-  
+
   // Hide all potential dropdowns just to be safe
   ['name', 'phone', 'address'].forEach(f => {
     const dropdown = document.getElementById(getDropdownId(f));
@@ -1445,11 +1445,11 @@ async function addPatient() {
     alert("Please select the doctor before saving.");
     return;
   }
-  
+
   if (patientId) {
-    const hasBadBehavior = allPatients.some(p => 
-      String(p.patient_id) === String(patientId) && 
-      String(p.doctor) === String(doctor) && 
+    const hasBadBehavior = allPatients.some(p =>
+      String(p.patient_id) === String(patientId) &&
+      String(p.doctor) === String(doctor) &&
       p.patient_behavior === "Bad"
     );
     if (hasBadBehavior) {
@@ -1463,7 +1463,7 @@ async function addPatient() {
   const prevDocBal = parseFloat(document.getElementById("prevBal").value) || 0;
   const prevMedBal = parseFloat(document.getElementById("prevMedBal").value) || 0;
   const totalPrevBal = prevDocBal + prevMedBal;
-  
+
   if (totalPrevBal > 0) {
     const isConfirmed = await customConfirmAsync(`This patient has an old pending balance of ₹${totalPrevBal}. Do you want to save this entry without collecting it now?`);
     if (!isConfirmed) {
@@ -1503,7 +1503,7 @@ async function addPatient() {
     const origChk = document.getElementById("originalCheckupId").value || finalCheckupId;
     const origVis = document.getElementById("originalVisit").value || document.getElementById("visit").value;
     const editingRowIndex = formMode === "update" ? allPatients.find(p => p.patient_id == finalPatientId && p.checkup_id == origChk && p.visit == origVis)?.row_index : null;
-    
+
     if (formMode === "add" || (formMode === "update" && latestRecord.row_index !== editingRowIndex)) {
       alert(`This patient is currently sitting in the Observation List at Token No: ${latestRecord.token_no || '-'}. You cannot add a new session until their active observation is cleared.`);
       return;
@@ -1543,12 +1543,12 @@ async function addPatient() {
     } else {
       const todayStr = formatDate(new Date());
       const selectedDoctor = document.getElementById("doctor").value || "";
-      
+
       // Get all tokens for today for the SAME doctor only
       const doctorTodaysTokens = allPatients
         .filter(p => p.date === todayStr && p.doctor === selectedDoctor && p.token_no && !isNaN(parseInt(p.token_no)))
         .map(p => parseInt(p.token_no));
-        
+
       let nextToken = doctorTodaysTokens.length > 0 ? Math.max(...doctorTodaysTokens) + 1 : 1;
       finalTokenNo = nextToken;
       document.getElementById("tokenNo").value = finalTokenNo;
@@ -1574,7 +1574,7 @@ async function addPatient() {
   const patientBehavior = patientBehaviorEl ? patientBehaviorEl.value : ""; // "Good", "Bad", or "" (unselected)
   const behaviorReasonEl = document.getElementById("behaviorReason");
   const behaviorReason = behaviorReasonEl ? behaviorReasonEl.value.trim() : "";
-  
+
   // Append behavior (with reason) to status if selected
   // e.g. "Left Clinic (Bad: Rude patient)" or "Left Clinic (Good: Very cooperative)"
   if (patientBehavior === "Good" || patientBehavior === "Bad") {
@@ -1639,10 +1639,10 @@ async function addPatient() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patientData)
     });
-    
+
     // Refresh from Google Sheets
     await fetchPatients();
-    
+
     setTimeout(() => {
       clearForm(false);
       document.getElementById("btnText").style.display = "block";
@@ -1675,7 +1675,7 @@ async function deletePatient(rowIndex, patientId, checkupId, visit) {
   } else {
     allPatients = allPatients.filter(p => !(String(p.patient_id) === String(patientId) && String(p.checkup_id) === String(checkupId) && p.visit === visit));
   }
-  
+
   localStorage.setItem("cachedPatients", JSON.stringify(allPatients));
   renderTable(allPatients);
   if (typeof renderDoctorTally === 'function') renderDoctorTally();
@@ -1696,10 +1696,10 @@ async function deletePatient(rowIndex, patientId, checkupId, visit) {
 function renderTable(data, resetPage = true) {
   if (resetPage) currentPage = 1;
   currentDataset = data;
-  
+
   const totalPages = Math.ceil(data.length / rowsPerPage) || 1;
   if (currentPage > totalPages) currentPage = totalPages;
-  
+
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = startIndex + rowsPerPage;
   const paginatedData = data.slice(startIndex, endIndex);
@@ -1716,7 +1716,7 @@ function renderTable(data, resetPage = true) {
   if (pageEndEl) pageEndEl.innerText = Math.min(endIndex, data.length);
   if (totalRecordsEl) totalRecordsEl.innerText = data.length;
   if (pageInfoEl) pageInfoEl.innerText = `Page ${currentPage} of ${totalPages}`;
-  
+
   if (btnPrev) btnPrev.disabled = currentPage === 1;
   if (btnPrev) btnPrev.style.opacity = currentPage === 1 ? "0.5" : "1";
   if (btnNext) btnNext.disabled = currentPage === totalPages || totalPages === 0;
@@ -1751,7 +1751,7 @@ function renderTable(data, resetPage = true) {
 
     const row = document.createElement("tr");
     row.className = "optimistic-row";
-    
+
     const isSettlement = parseFloat(p.payment_by_shehjar) > 0 && !p.patient_id;
     if (isSettlement) {
       row.classList.add("settlement-row");
@@ -1787,9 +1787,9 @@ function renderTable(data, resetPage = true) {
         let reasonMatch = rawStatus.match(/\((Good|Bad):\s*([^)]+)\)$/);
         let behaviorText = behavior === 'Good' ? '(Good Behavior)' : '(Bad Behavior)';
         if (reasonMatch) behaviorText = `(${behaviorMatch[1]} Behavior: ${reasonMatch[2]})`;
-        
+
         if (behavior === 'Good') return `<span class="status-badge ${badgeClass}" style="white-space:nowrap;">${cleanStatus}</span><span style="display:inline-block; margin-top:3px; font-size:9px; font-weight:800; color:#16a34a; background:#dcfce7; padding:1px 6px; border-radius:3px;">${behaviorText}</span>`;
-        if (behavior === 'Bad')  return `<span class="status-badge ${badgeClass}" style="white-space:nowrap;">${cleanStatus}</span><span style="display:inline-block; margin-top:3px; font-size:9px; font-weight:800; color:#dc2626; background:#fee2e2; padding:1px 6px; border-radius:3px;">${behaviorText}</span>`;
+        if (behavior === 'Bad') return `<span class="status-badge ${badgeClass}" style="white-space:nowrap;">${cleanStatus}</span><span style="display:inline-block; margin-top:3px; font-size:9px; font-weight:800; color:#dc2626; background:#fee2e2; padding:1px 6px; border-radius:3px;">${behaviorText}</span>`;
         return `<span class="status-badge ${badgeClass}">${cleanStatus}</span>`;
       })()}</td>
       <td>
@@ -1849,7 +1849,7 @@ function clearForm(keepId = false) {
   document.getElementById("smartHint").style.display = "none";
 
   // Reset Default Values
-  
+
   const paymentOnly = document.getElementById("paymentOnly");
   if (paymentOnly) paymentOnly.checked = false;
   const doctorSelectClear = document.getElementById("doctor");
@@ -1886,7 +1886,7 @@ function clearForm(keepId = false) {
   if (anotherClinic) {
     anotherClinic.checked = false;
   }
-  
+
   // Reset behavior dropdown to UNSELECTED (blank) and button to default blue
   const behaviorSel = document.getElementById("patientBehavior");
   if (behaviorSel) {
@@ -1988,7 +1988,7 @@ function refreshPreviewIds() {
   const todaysTokens = allPatients
     .filter(p => p.date === todayStr && p.token_no && !isNaN(parseInt(p.token_no)))
     .map(p => parseInt(p.token_no));
-    
+
   let nextToken = todaysTokens.length > 0 ? Math.max(...todaysTokens) + 1 : 1;
   document.getElementById("tokenNo").value = nextToken;
 
@@ -2000,7 +2000,7 @@ function refreshPreviewIds() {
     showPatientBadge("new");
     return;
   }
-  
+
   const nextPatientId = Math.max(...allPatients.map(p => parseInt(p.patient_id) || 0)) + 1;
   document.getElementById("searchPatientId").value = nextPatientId;
   document.getElementById("activePatientId").value = nextPatientId;
@@ -2074,7 +2074,7 @@ function handleObservationChange() {
   const isLeft = document.getElementById("leftClinic");
   const paidInput = document.getElementById("paid");
   const medPaidInput = document.getElementById("medicinePaid");
-  
+
   if (isObs && isLeft && isLeft.checked) {
     isLeft.checked = false; // Mutually exclusive
   } else if (!isObs && isLeft && !isLeft.checked) {
@@ -2088,7 +2088,7 @@ function handleObservationChange() {
     paidInput.value = "";
     paidInput.disabled = true;
     paidInput.title = tooltip;
-    
+
     if (medPaidInput) {
       medPaidInput.value = "";
       medPaidInput.disabled = true;
@@ -2116,20 +2116,20 @@ function handlePaymentOnlyChange() {
   const feeInput = document.getElementById("fee");
   const doctorSelect = document.getElementById("doctor");
   const paymentNote = document.getElementById("paymentNote");
-  
+
   if (isPaymentOnly) {
     if (paymentNote) paymentNote.style.display = "inline-block";
-    
+
     // Uncheck conflicting checkboxes
     const obsCheckbox = document.getElementById("underObservation");
     if (obsCheckbox && obsCheckbox.checked) { obsCheckbox.checked = false; handleObservationChange(); }
-    
+
     const leftClinicCheckbox = document.getElementById("leftClinic");
     if (leftClinicCheckbox) leftClinicCheckbox.checked = false;
-    
+
     const leftWithout = document.getElementById("leftWithoutCheckup");
     if (leftWithout && leftWithout.checked) { leftWithout.checked = false; handleLeftWithoutCheckupChange(); }
-    
+
     const extraVisitCheckbox = document.getElementById("isExtraVisit");
     if (extraVisitCheckbox && extraVisitCheckbox.checked) { extraVisitCheckbox.checked = false; handleExtraVisitCheckbox(); }
 
@@ -2140,7 +2140,7 @@ function handlePaymentOnlyChange() {
     if (!visitInput.dataset.originalVisit) visitInput.dataset.originalVisit = visitInput.value;
     if (!feeInput.dataset.originalFee) feeInput.dataset.originalFee = feeInput.value;
     if (!doctorSelect.dataset.originalDoctor) doctorSelect.dataset.originalDoctor = doctorSelect.value;
-    
+
     const tokenNoInput = document.getElementById("tokenNo");
     if (tokenNoInput) {
       if (!tokenNoInput.dataset.originalToken) tokenNoInput.dataset.originalToken = tokenNoInput.value;
@@ -2164,18 +2164,18 @@ function handlePaymentOnlyChange() {
 
     visitInput.value = "Pharmacy / Payment";
     feeInput.value = "0";
-    
+
     // Disable doctor select
     doctorSelect.value = "";
     doctorSelect.disabled = true;
-    
+
     calculateBalance();
   } else {
     if (paymentNote) {
       paymentNote.style.display = "none";
       paymentNote.value = "";
     }
-    
+
     // Restore visit type
     if (visitInput.dataset.originalVisit) {
       visitInput.value = visitInput.dataset.originalVisit;
@@ -2183,7 +2183,7 @@ function handlePaymentOnlyChange() {
     } else {
       visitInput.value = "Visit 1";
     }
-    
+
     // Restore fee
     if (feeInput.dataset.originalFee) {
       feeInput.value = feeInput.dataset.originalFee;
@@ -2191,7 +2191,7 @@ function handlePaymentOnlyChange() {
     } else {
       handleVisitTypeInput();
     }
-    
+
     // Restore doctor
     if (doctorSelect.dataset.originalDoctor) {
       doctorSelect.value = doctorSelect.dataset.originalDoctor;
@@ -2226,7 +2226,7 @@ function handlePaymentOnlyChange() {
       }
       validUptoInput.disabled = false;
     }
-    
+
     calculateBalance();
   }
 }
@@ -2236,7 +2236,7 @@ function handleLeftClinicChange() {
   const isLeft = document.getElementById("leftClinic").checked;
   const isObs = document.getElementById("underObservation");
   const leftWithout = document.getElementById("leftWithoutCheckup");
-  
+
   if (isLeft) {
     if (isObs && isObs.checked) {
       isObs.checked = false;
@@ -2254,7 +2254,7 @@ function handleLeftWithoutCheckupChange() {
   const visitInput = document.getElementById("visit");
   const feeInput = document.getElementById("fee");
   const paidInput = document.getElementById("paid");
-  
+
   if (isLeftWithout) {
     // Uncheck conflicting checkboxes
     const obsCheckbox = document.getElementById("underObservation");
@@ -2303,7 +2303,7 @@ function handleLeftWithoutCheckupChange() {
     } else {
       visitInput.value = "Visit 1"; // Fallback
     }
-    
+
     // Restore fee
     if (feeInput.dataset.originalFee) {
       feeInput.value = feeInput.dataset.originalFee;
@@ -2311,7 +2311,7 @@ function handleLeftWithoutCheckupChange() {
     } else {
       handleVisitTypeInput(); // Fallback recalculation
     }
-    
+
     // Restore paid
     if (paidInput.dataset.originalPaid) {
       paidInput.value = paidInput.dataset.originalPaid;
@@ -2319,7 +2319,7 @@ function handleLeftWithoutCheckupChange() {
     } else {
       paidInput.value = "";
     }
-    
+
     // Re-enable the paid field.
     paidInput.disabled = false;
     calculateBalance();
@@ -2330,7 +2330,7 @@ function uncheckObservation() {
   const obsCheckbox = document.getElementById("underObservation");
   if (obsCheckbox.checked) {
     obsCheckbox.checked = false;
-    
+
     const leftClinic = document.getElementById("leftClinic");
     if (leftClinic && !leftClinic.checked) {
       leftClinic.checked = true;
@@ -2339,10 +2339,10 @@ function uncheckObservation() {
     // Just enable the inputs without clearing the value since they are typing
     const paidInput = document.getElementById("paid");
     const medPaidInput = document.getElementById("medicinePaid");
-    
+
     paidInput.disabled = false;
     paidInput.title = "";
-    
+
     if (medPaidInput) {
       medPaidInput.disabled = false;
       medPaidInput.title = "";
@@ -2447,8 +2447,21 @@ function editPatient(patientId, checkupId, visit) {
     document.getElementById("isExtraVisit").checked = false;
     document.getElementById("paid").disabled = false; // Make sure paid is enabled
   }
-  
+
   const pStatusClean = String(p.status || "").replace(/\s*\(((Good|Bad)(?::\s*([^)]*?))?)\)$/, "").trim();
+
+  if (pStatusClean.includes("Pharmacy / Payment")) {
+    document.getElementById("paymentOnly").checked = true;
+    handlePaymentOnlyChange();
+    const noteMatch = String(p.status || "").match(/\(([^)]+)\)/);
+    if (noteMatch && document.getElementById("paymentNote")) {
+      document.getElementById("paymentNote").value = noteMatch[1];
+    }
+  } else {
+    document.getElementById("paymentOnly").checked = false;
+    handlePaymentOnlyChange();
+  }
+
   if (pStatusClean === "Under Observation") {
     document.getElementById("underObservation").checked = true;
     document.getElementById("leftClinic").checked = false;
@@ -2466,17 +2479,17 @@ function editPatient(patientId, checkupId, visit) {
     document.getElementById("leftClinic").checked = false;
     if (document.getElementById("leftWithoutCheckup")) document.getElementById("leftWithoutCheckup").checked = false;
   }
-  
+
   if (document.getElementById("patientBehavior")) {
     // Extract behavior from status string e.g. "Left Clinic (Bad: Rude)" → "Bad"
     const statusStr = String(p.status || "");
     const behMatch = statusStr.match(/\(((Good|Bad)(?::\s*([^)]*?))?)\)$/);
     const extractedBehavior = behMatch ? behMatch[2] : "";
     const extractedReason = behMatch ? behMatch[3] || "" : "";
-    
+
     document.getElementById("patientBehavior").value = extractedBehavior;
     updateBehaviorDropdownColor(); // Make sure color updates
-    
+
     // Also set the reason if we are editing
     if (extractedReason) {
       let reasonInput = document.getElementById("behaviorReason");
@@ -2498,6 +2511,10 @@ function editPatient(patientId, checkupId, visit) {
 
   // Scroll to top
   window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Switch to Main Dashboard tab so the form is visible
+  const mainTabBtn = document.querySelector('.tab-btn[onclick*="mainDashboardTab"]');
+  if (mainTabBtn) switchTab('mainDashboardTab', mainTabBtn);
 }
 
 // Tab Switching Logic
@@ -2515,10 +2532,10 @@ async function switchTab(tabId, btnElement) {
   document.querySelectorAll('.tab-content').forEach(tab => {
     tab.classList.remove('active');
   });
-  
+
   // Show target tab
   document.getElementById(tabId).classList.add('active');
-  
+
   // Update button active state
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.remove('active');
@@ -2529,16 +2546,16 @@ async function switchTab(tabId, btnElement) {
   if (tabId === 'doctorTallyTab') {
     renderDoctorTally();
   }
-  
+
   // If opening Patient Tally tab, render it
   if (tabId === 'patientsTallyTab') {
     renderPatientTally();
     renderBalanceSheet();
   }
-  
+
 }
 
-window.switchPatientTallyTab = function(tab) {
+window.switchPatientTallyTab = function (tab) {
   if (tab === 'statement') {
     document.getElementById('ptStatementContainer').style.display = 'block';
     document.getElementById('ptBalanceSheetContainer').style.display = 'none';
@@ -2559,7 +2576,7 @@ window.switchPatientTallyTab = function(tab) {
 
 let currentDoctorTallyTab = 'history';
 
-window.switchDoctorTallyTab = function(tab) {
+window.switchDoctorTallyTab = function (tab) {
   currentDoctorTallyTab = tab;
   if (tab === 'statement') {
     document.getElementById('dtStatementContainer').style.display = 'block';
@@ -2615,7 +2632,7 @@ function renderDoctorTally() {
   // Render Table & Calculate Totals
   const tbody = document.getElementById("dtTableBody");
   tbody.innerHTML = "";
-  
+
   let totalFee = 0;
   let totalPaid = 0;
   let totalShehjar = 0;
@@ -2624,7 +2641,7 @@ function renderDoctorTally() {
     const fee = parseFloat(p.fee) || 0;
     const paid = parseFloat(p.paid) || 0;
     const shehjar = parseFloat(p.payment_by_shehjar) || 0;
-    
+
     totalFee += fee;
     totalPaid += paid;
     totalShehjar += shehjar;
@@ -2654,12 +2671,12 @@ function renderDoctorTally() {
   // Update Receipt View
   const todayDateStr = new Date().toLocaleDateString('en-GB'); // DD/MM/YYYY format
   document.getElementById("rcptDate").innerText = todayDateStr;
-  
+
   const labelEl = document.getElementById("rcptPaidByShehjarLabel");
   if (labelEl) {
     labelEl.innerText = `Paid by Shehjar on ${todayDateStr}`;
   }
-  
+
   // We keep the input value so it can be printed on the receipt
   // document.getElementById("rcptPaidByShehjar").value = "";
 
@@ -2667,14 +2684,14 @@ function renderDoctorTally() {
     // A specific doctor is selected
     const sel = document.getElementById("dtFilterDoctor");
     document.getElementById("rcptDoctorName").innerText = sel.options[sel.selectedIndex].text;
-    
+
     // Format receipt fields
     document.getElementById("rcptAmountDoctor").innerText = `₹ ${totalFee}`;
-    
+
     const todayStrYYYY = formatDate(new Date());
     document.getElementById("rcptFromDate").innerText = fFrom ? fFrom : "Start";
     document.getElementById("rcptToDate").innerText = fTo ? fTo : todayStrYYYY;
-    
+
     // Calculate Last Balance
     let lastBalance = 0;
     let lastBalanceDateText = "Date: --/--/----";
@@ -2729,7 +2746,7 @@ function renderDoctorTally() {
     document.getElementById("rcptAmountDoctor").innerText = `₹ 0`;
     document.getElementById("rcptFromDate").innerText = "--";
     document.getElementById("rcptToDate").innerText = "--";
-    
+
     document.getElementById("rcptLastBalance").innerText = `₹ 0`;
     document.getElementById("rcptLastBalance").dataset.val = 0;
     document.getElementById("rcptLastBalanceDate").innerText = "Date: --/--/----";
@@ -2737,17 +2754,137 @@ function renderDoctorTally() {
     document.getElementById("rcptAlreadyReceived").innerText = `₹ 0`;
     document.getElementById("rcptAlreadyReceived").dataset.val = 0;
   }
-  
+
   updateReceiptCalculation();
   renderDoctorHistory(filtered);
 }
 
+window.uiChecked = new Set();
+window.savedDates = new Set();
+window.historyDatesAsc = [];
+window.historyMapData = {};
+
+function extractSavedDates(filteredData) {
+  const dates = new Set();
+  filteredData.forEach(p => {
+    if (parseFloat(p.payment_by_shehjar) > 0 && p.name) {
+      const match = p.name.match(/\[Dates:\s*([^\]]+)\]/);
+      if (match) {
+        match[1].split(',').forEach(s => dates.add(s.trim()));
+      }
+    }
+  });
+  return dates;
+}
+
+window.toggleHistoryDate = function (date) {
+  const chk = document.getElementById("chk_" + date);
+  if (!chk.checked) {
+    window.uiChecked.delete(date);
+  } else {
+    window.uiChecked.add(date);
+  }
+
+  let requiredForUnsaved = 0;
+  window.historyDatesAsc.forEach(d => {
+    if (window.uiChecked.has(d) && !window.savedDates.has(d)) {
+      requiredForUnsaved += window.historyMapData[d].pastRemaining;
+    }
+  });
+
+  const rcptPaid = document.getElementById("rcptPaidByShehjar");
+  if (rcptPaid) {
+    window.isProgrammaticInput = true;
+    rcptPaid.value = requiredForUnsaved;
+    updateReceiptCalculation();
+    window.isProgrammaticInput = false;
+  }
+
+  window.recalculateHistoryColors();
+};
+
+window.handlePaymentInput = function () {
+  const rcptPaid = document.getElementById("rcptPaidByShehjar");
+  let typedPool = rcptPaid ? (parseFloat(rcptPaid.value) || 0) : 0;
+
+  window.uiChecked = new Set(window.savedDates);
+
+  if (typedPool >= 0) {
+      window.historyDatesAsc.forEach(d => {
+        if (window.savedDates.has(d)) return;
+        const req = window.historyMapData[d].pastRemaining;
+        if (window.historyMapData[d].totalAmount === 0) return;
+        
+        if (req === 0) {
+          window.uiChecked.add(d);
+        } else if (typedPool >= req) {
+          window.uiChecked.add(d);
+          typedPool -= req;
+        } else if (typedPool > 0) {
+          typedPool = 0; 
+        }
+      });
+  }
+
+  window.historyDatesAsc.forEach(d => {
+    const chk = document.getElementById("chk_" + d);
+    if (chk) {
+      chk.checked = window.uiChecked.has(d);
+    }
+  });
+};
+
+window.recalculateHistoryColors = function () {
+  const rcptPaid = document.getElementById("rcptPaidByShehjar");
+  let typedPool = rcptPaid ? (parseFloat(rcptPaid.value) || 0) : 0;
+
+  window.historyDatesAsc.forEach(d => {
+    const data = window.historyMapData[d];
+    const row = document.getElementById("row_" + d);
+    if (!row) return;
+
+    if (data.totalAmount === 0 && data.shehjarPaid > 0) {
+      row.style.background = "#fef9c3";
+      return;
+    }
+
+    if (window.savedDates.has(d)) {
+        row.style.background = `linear-gradient(to right, #dcfce7 100%, #ffffff 100%)`;
+    } 
+    else if (window.uiChecked.has(d)) {
+        row.style.background = `linear-gradient(to right, #dcfce7 100%, #ffffff 100%)`;
+        typedPool -= data.pastRemaining; 
+    } 
+    else {
+        let currentTotalPaid = data.pastPaid || 0;
+        if (typedPool > 0) {
+            let reqRemaining = data.totalAmount - currentTotalPaid;
+            if (typedPool >= reqRemaining) {
+                currentTotalPaid += reqRemaining;
+                typedPool -= reqRemaining;
+            } else {
+                currentTotalPaid += typedPool;
+                typedPool = 0;
+            }
+        }
+
+        if (currentTotalPaid > 0) {
+            let req = data.totalAmount;
+            const pct = (currentTotalPaid / req) * 100;
+            row.style.background = `linear-gradient(to right, #dcfce7 ${pct}%, #ffffff ${pct}%)`;
+        } else {
+            row.style.background = "#ffffff";
+        }
+    }
+  });
+};
+
 function renderDoctorHistory(filteredData) {
   const tbody = document.getElementById("dtHistoryTableBody");
   tbody.innerHTML = "";
-  
+
   const fDoc = document.getElementById("dtFilterDoctor").value.trim();
-  
+
   if (fDoc === "") {
     tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #64748b; padding: 30px; font-weight: 700; font-size: 16px;">Please select the doctor first.</td></tr>`;
     document.getElementById("dtHistoryTotalAmount").innerText = `₹ 0`;
@@ -2755,7 +2892,7 @@ function renderDoctorHistory(filteredData) {
     document.getElementById("dtHistoryRemaining").innerText = `₹ 0`;
     return;
   }
-  
+
   if (!filteredData || filteredData.length === 0) {
     document.getElementById("dtHistoryTotalAmount").innerText = `₹ 0`;
     document.getElementById("dtHistoryTotalShehjar").innerText = `₹ 0`;
@@ -2763,28 +2900,24 @@ function renderDoctorHistory(filteredData) {
     return;
   }
 
-  // Aggregate by Date
   const historyMap = {};
-
   filteredData.forEach(p => {
     const date = p.date;
     if (!date) return;
-    
     if (!historyMap[date]) {
-      historyMap[date] = { date: date, visit1Count: 0, totalAmount: 0, shehjarPaid: 0 };
+      historyMap[date] = { date: date, visit1Count: 0, totalAmount: 0, shehjarPaid: 0, payoutDates: new Set() };
     }
-    
     const visitStr = String(p.visit || "").toLowerCase().trim();
     const shehjar = parseFloat(p.payment_by_shehjar) || 0;
     const isSettlement = shehjar > 0 && !p.patient_id;
-    
+
     if (isSettlement) {
       historyMap[date].shehjarPaid += shehjar;
+      const match = (p.name || "").match(/\[Dates:\s*([^\]]+)\]/);
+      if (match) match[1].split(',').forEach(s => historyMap[date].payoutDates.add(s.trim()));
     } else {
-      // Check if it's a first visit (Visit 1 and not Extra)
       const hasVisit1 = visitStr.includes("visit 1") || visitStr.includes("visit1");
       const isExtra = visitStr.includes("extra");
-      
       if (hasVisit1 && !isExtra) {
         historyMap[date].visit1Count += 1;
         historyMap[date].totalAmount += parseFloat(p.fee) || 0;
@@ -2792,67 +2925,141 @@ function renderDoctorHistory(filteredData) {
     }
   });
 
-  // Sort dates descending
-  const sortedDates = Object.keys(historyMap).sort((a, b) => new Date(b) - new Date(a));
-  
+  window.historyMapData = historyMap;
+  window.savedDates = extractSavedDates(filteredData);
+  window.uiChecked = new Set(window.savedDates);
+  window.historyDatesAsc = Object.keys(historyMap).sort((a, b) => new Date(a) - new Date(b));
+  const sortedDates = [...window.historyDatesAsc].reverse();
+
   let grandTotalAmount = 0;
   let grandTotalShehjar = 0;
 
   sortedDates.forEach(d => {
+    grandTotalAmount += historyMap[d].totalAmount;
+    grandTotalShehjar += historyMap[d].shehjarPaid;
+  });
+
+  // Calculate chronological past payments for partial rows
+  let savedRequired = 0;
+  window.savedDates.forEach(d => {
+      savedRequired += historyMap[d].totalAmount;
+  });
+  let pastExcessPool = Math.max(0, grandTotalShehjar - savedRequired);
+
+  window.historyDatesAsc.forEach(d => {
+      if (window.savedDates.has(d) || historyMap[d].totalAmount === 0) {
+          historyMap[d].pastPaid = window.savedDates.has(d) ? historyMap[d].totalAmount : 0;
+          historyMap[d].pastRemaining = 0;
+          return;
+      }
+      const req = historyMap[d].totalAmount;
+      if (pastExcessPool >= req) {
+          historyMap[d].pastPaid = req;
+          pastExcessPool -= req;
+      } else if (pastExcessPool > 0) {
+          historyMap[d].pastPaid = pastExcessPool;
+          pastExcessPool = 0;
+      } else {
+          historyMap[d].pastPaid = 0;
+      }
+      historyMap[d].pastRemaining = req - historyMap[d].pastPaid;
+      
+      if (historyMap[d].pastRemaining === 0 && req > 0) {
+          window.savedDates.add(d);
+          window.uiChecked.add(d);
+      }
+  });
+
+
+  sortedDates.forEach(d => {
     const data = historyMap[d];
-    grandTotalAmount += data.totalAmount;
-    grandTotalShehjar += data.shehjarPaid;
-    
     const row = document.createElement("tr");
+    row.id = `row_${d}`;
+
+    const isSaved = window.savedDates.has(d);
+    const isChecked = window.uiChecked.has(d) ? "checked" : "";
+    const disabledAttr = (isSaved || data.totalAmount === 0) ? "disabled" : "";
+    const checkboxHtml = `<input type="checkbox" id="chk_${d}" ${isChecked} ${disabledAttr} onchange="window.toggleHistoryDate('${d}')" style="cursor: pointer; transform: scale(1.1); margin-right: 8px;">`;
+
+    let payoutDatesStr = "";
+    if (data.payoutDates.size > 0) {
+      const dtArray = Array.from(data.payoutDates).map(str => {
+        const p = str.split('-'); return p.length === 3 ? `${p[2]}/${p[1]}` : str;
+      });
+      payoutDatesStr = `<br><span style="font-size: 10.5px; color: #64748b;">(For: ${dtArray.join(', ')})</span>`;
+    }
+
+    let partialHtml = "";
+    if (!isSaved && data.totalAmount > 0 && data.pastRemaining > 0) {
+        if (data.pastPaid > 0) {
+            partialHtml = `<div style="margin-top: 5px; font-size: 11px;"><span style="background: #fef3c7; color: #d97706; padding: 2px 6px; border-radius: 4px; font-weight: 700;">₹ ${data.pastPaid} paid • ₹ ${data.pastRemaining} remaining</span></div>`;
+        } else {
+            partialHtml = `<div style="margin-top: 5px; font-size: 11px;"><span style="background: #fee2e2; color: #dc2626; padding: 2px 6px; border-radius: 4px; font-weight: 700;">₹ ${data.pastRemaining} remaining</span></div>`;
+        }
+    }
+
     row.innerHTML = `
       <td>${data.date}</td>
       <td style="color: #0284c7; font-weight: 500;">
         ${data.visit1Count} <span style="color: #94a3b8; font-size: 11px;">visits</span> = <strong>₹ ${data.totalAmount}</strong>
+        ${partialHtml}
       </td>
-      <td style="color: #8b5cf6; font-weight: 500;">₹ ${data.shehjarPaid}</td>
+      <td style="color: #8b5cf6; font-weight: 500; display:flex; justify-content:space-between; align-items:center;">
+        <span>₹ ${data.shehjarPaid} ${payoutDatesStr}</span>
+        ${checkboxHtml}
+      </td>
     `;
     tbody.appendChild(row);
   });
-  
+
   document.getElementById("dtHistoryTotalAmount").innerText = `₹ ${grandTotalAmount}`;
   document.getElementById("dtHistoryTotalShehjar").innerText = `₹ ${grandTotalShehjar}`;
   document.getElementById("dtHistoryRemaining").innerText = `₹ ${grandTotalAmount - grandTotalShehjar}`;
+
+  window.recalculateHistoryColors();
 }
 
 
-window.updateReceiptCalculation = function() {
+window.updateReceiptCalculation = function () {
   let lastBal = parseFloat(document.getElementById("rcptLastBalance").dataset.val);
   if (isNaN(lastBal)) {
-    lastBal = parseFloat(document.getElementById("rcptLastBalance").innerText.replace(/[^0-9.-]+/g,"")) || 0;
+    lastBal = parseFloat(document.getElementById("rcptLastBalance").innerText.replace(/[^0-9.-]+/g, "")) || 0;
   }
-  
-  const currentAmtStr = document.getElementById("rcptAmountDoctor").innerText.replace(/[^0-9.-]+/g,"");
+
+  const currentAmtStr = document.getElementById("rcptAmountDoctor").innerText.replace(/[^0-9.-]+/g, "");
   const currentAmt = parseFloat(currentAmtStr) || 0;
 
   let alreadyRec = parseFloat(document.getElementById("rcptAlreadyReceived").dataset.val);
   if (isNaN(alreadyRec)) {
-    alreadyRec = parseFloat(document.getElementById("rcptAlreadyReceived").innerText.replace(/[^0-9.-]+/g,"")) || 0;
+    alreadyRec = parseFloat(document.getElementById("rcptAlreadyReceived").innerText.replace(/[^0-9.-]+/g, "")) || 0;
   }
-  
+
   const total = lastBal + currentAmt - alreadyRec;
   document.getElementById("rcptTotal").innerText = `₹ ${total}`;
-  
+
   const paid = parseFloat(document.getElementById("rcptPaidByShehjar").value) || 0;
   const remaining = total - paid;
-  
+
   document.getElementById("rcptRemaining").innerText = `₹ ${remaining}`;
+
+  if (typeof window.recalculateHistoryColors === 'function') {
+    if (!window.isProgrammaticInput) {
+      window.handlePaymentInput();
+    }
+    window.recalculateHistoryColors();
+  }
 };
 
-window.saveDoctorSettlement = async function() {
+window.saveDoctorSettlement = async function () {
   const docName = document.getElementById("rcptDoctorName").innerText;
   if (docName === "-- Select Doctor --" || docName === "") {
     alert("Please select a valid doctor to save settlement.");
     return;
   }
-  
+
   const paidAmt = parseFloat(document.getElementById("rcptPaidByShehjar").value) || 0;
   const savedSum = parseFloat(document.getElementById("rcptPaidByShehjar").dataset.savedSum) || 0;
-  
+
   if (paidAmt <= 0) {
     alert("You haven't entered any amount to save a new entry.");
     return;
@@ -2862,7 +3069,7 @@ window.saveDoctorSettlement = async function() {
     alert("This amount is already the total saved for today! To add a NEW payment, please erase it and enter the new payment amount.");
     return;
   }
-  
+
   const btn = document.getElementById("btnSaveSettlement");
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
   btn.disabled = true;
@@ -2872,7 +3079,42 @@ window.saveDoctorSettlement = async function() {
 
   const notesEl = document.getElementById("rcptNotes");
   const notes = notesEl && notesEl.value.trim() !== "" ? notesEl.value.trim() : "";
-  const displayName = notes ? `Doctor Payment Entry (${notes})` : "Doctor Payment Entry";
+
+  const newlyChecked = [...(window.uiChecked || [])].filter(d => !(window.savedDates || new Set()).has(d));
+  
+  let partialDates = [];
+  if (paidAmt > 0) {
+      let pool = paidAmt;
+      window.historyDatesAsc.forEach(d => {
+        if ((window.savedDates || new Set()).has(d)) return;
+        if (!window.historyMapData || !window.historyMapData[d]) return;
+        const req = window.historyMapData[d].pastRemaining;
+        if (window.historyMapData[d].totalAmount === 0) return;
+        if (req === 0) return;
+
+        if (pool >= req) {
+          pool -= req;
+        } else if (pool > 0) {
+          partialDates.push(d);
+          pool = 0;
+        }
+      });
+  }
+
+  let extraStr = "";
+  if (newlyChecked.length > 0) {
+    extraStr = `[Dates: ${newlyChecked.join(', ')}]`;
+  }
+  if (partialDates.length > 0) {
+    if (extraStr) extraStr += " ";
+    extraStr += `[Partial: ${partialDates.join(', ')}]`;
+  }
+
+  let fullNotes = notes;
+  if (extraStr) {
+    fullNotes = notes ? `${notes} ${extraStr}` : extraStr;
+  }
+  const displayName = fullNotes ? `Doctor Payment Entry (${fullNotes})` : "Doctor Payment Entry";
 
   const payload = {
     action: "insert",
@@ -2889,14 +3131,14 @@ window.saveDoctorSettlement = async function() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
-    
+
     // Assume success due to no-cors
     alert("Settlement saved successfully!");
     document.getElementById("rcptPaidByShehjar").value = "";
     const notesEl = document.getElementById("rcptNotes");
     if (notesEl) notesEl.value = "";
     updateReceiptCalculation();
-    
+
     // Optimistic UI update
     allPatients.unshift({
       date: systemDate,
@@ -2907,9 +3149,9 @@ window.saveDoctorSettlement = async function() {
     localStorage.setItem("cachedPatients", JSON.stringify(allPatients));
     renderTable(allPatients);
     renderDoctorTally();
-    
+
     // Refresh fully in background
-    fetchPatients(); 
+    fetchPatients();
   } catch (e) {
     console.error(e);
     alert("Network error.");
@@ -2923,10 +3165,10 @@ window.saveDoctorSettlement = async function() {
 // Print Functionality
 // ==========================================
 
-window.printStatement = function() {
+window.printStatement = function () {
   const printArea = document.getElementById('printArea');
   if (!printArea) return;
-  
+
   const doctor = document.getElementById("dtFilterDoctor");
   const docName = doctor.options[doctor.selectedIndex].text;
   const from = document.getElementById("dtFilterFromDate").value || "All Time";
@@ -2939,9 +3181,9 @@ window.printStatement = function() {
   } else {
     tableContainer = document.getElementById("dtTableBody").closest('table');
   }
-  
+
   const cloneTable = tableContainer.cloneNode(true);
-  
+
   // To prevent the total footer from repeating on every printed page,
   // we move the tfoot row into the tbody as the final row.
   const tfoot = cloneTable.querySelector('tfoot');
@@ -2951,7 +3193,7 @@ window.printStatement = function() {
     footerRows.forEach(row => tbody.appendChild(row));
     tfoot.remove();
   }
-  
+
   const tableHtml = cloneTable.outerHTML;
 
   const headerHtml = `
@@ -2973,7 +3215,7 @@ window.printStatement = function() {
   printArea.innerHTML = headerHtml + tableHtml;
 
   document.body.classList.add('printing-custom', 'print-mode-statement');
-  
+
   // Wait slightly to let the image decode and render in the DOM before printing
   setTimeout(() => {
     window.print();
@@ -2982,19 +3224,19 @@ window.printStatement = function() {
   }, 300);
 };
 
-window.printReceipt = function() {
+window.printReceipt = function () {
   const printArea = document.getElementById('printArea');
   if (!printArea) return;
 
   const receiptCard = document.getElementById("receiptCard");
   if (!receiptCard) return;
-  
+
   // Replace input with a div showing the same value for better printing
   const clone = receiptCard.cloneNode(true);
-  
+
   const rcptNotesDiv = clone.querySelector('#rcptNotes');
   if (rcptNotesDiv && rcptNotesDiv.parentElement) rcptNotesDiv.parentElement.parentElement.remove();
-  
+
   const input = clone.querySelector('#rcptPaidByShehjar');
   if (input) {
     const parent = input.parentElement;
@@ -3005,7 +3247,7 @@ window.printReceipt = function() {
   printArea.innerHTML = `<div class="receipt-wrapper">${clone.innerHTML}</div>`;
 
   document.body.classList.add('printing-custom', 'print-mode-receipt');
-  
+
   // Wait slightly to let the image decode and render in the DOM before printing
   setTimeout(() => {
     window.print();
@@ -3018,7 +3260,7 @@ window.printReceipt = function() {
    Patient Tally Logic (Placeholders)
    ========================================================================== */
 
-window.renderPatientTally = function() {
+window.renderPatientTally = function () {
   const tableBody = document.getElementById("ptTableBody");
   const pFilterRaw = document.getElementById("ptFilterPatient").value.trim();
   const dFilterName = document.getElementById("ptFilterDoctor").value;
@@ -3050,7 +3292,7 @@ window.renderPatientTally = function() {
         }
       }
     }
-    
+
     if (dFilterName && p.doctor !== dFilterName) match = false;
     if (fDate && p.date < fDate) match = false;
     if (tDate && p.date > tDate) match = false;
@@ -3058,7 +3300,7 @@ window.renderPatientTally = function() {
   });
 
   tableBody.innerHTML = "";
-  
+
   let totalDr = 0, totalPaidDr = 0, totalMed = 0, totalPaidMed = 0;
 
   if (filtered.length === 0) {
@@ -3107,9 +3349,9 @@ window.renderPatientTally = function() {
   let selectedPatient = null;
   if (pFilterRaw) {
     if (pFilterId) {
-       selectedPatient = allPatients.find(p => p.patient_id && p.patient_id.toString() === pFilterId);
+      selectedPatient = allPatients.find(p => p.patient_id && p.patient_id.toString() === pFilterId);
     } else {
-       selectedPatient = allPatients.find(p => p.name && p.name.toLowerCase().includes(pFilterRaw.toLowerCase()));
+      selectedPatient = allPatients.find(p => p.name && p.name.toLowerCase().includes(pFilterRaw.toLowerCase()));
     }
   }
 
@@ -3150,7 +3392,7 @@ function updatePatientInvoiceUI(patient, patientRecords) {
     document.getElementById("invRemMedFee").innerHTML = "₹ 0";
     document.getElementById("invTotalPayable").innerHTML = "₹ 0";
     document.getElementById("invFinalBalance").innerHTML = "₹ 0";
-    
+
     document.getElementById("invPaidByLabel").innerHTML = `PAID BY <span style="color:#2563eb;">--</span><br>ON <span style="color:#2563eb;">--/--/----</span>`;
     document.getElementById("invPaidToday").value = "";
     document.getElementById("ptInvoiceNotes").value = "";
@@ -3161,9 +3403,9 @@ function updatePatientInvoiceUI(patient, patientRecords) {
 
   const fDate = document.getElementById("ptFilterFromDate").value;
   const allPatientRecords = allPatients.filter(p => p.patient_id && p.patient_id.toString() === patient.patient_id.toString());
-  
+
   const todayStrYYYY = formatDate(new Date());
-  
+
   let lastBalance = 0;
   if (fDate) {
     // Calculate sum of everything strictly before fDate
@@ -3194,10 +3436,10 @@ function updatePatientInvoiceUI(patient, patientRecords) {
 
   const remDrFee = totalDr - totalPaidDr;
   const remMedFee = totalMed - totalPaidMed;
-  
+
   document.getElementById("invLastBalance").innerHTML = formatAdvance(lastBalance);
   document.getElementById("invLastBalanceDate").innerText = fDate ? `(< ${fDate})` : `(All Time)`;
-  
+
   document.getElementById("invDrFee").innerText = `₹ ${totalDr}`;
   document.getElementById("invPaidDrFee").innerText = `₹ ${totalPaidDr}`;
   document.getElementById("invRemDrFee").innerHTML = formatAdvance(remDrFee);
@@ -3210,12 +3452,12 @@ function updatePatientInvoiceUI(patient, patientRecords) {
 
   document.getElementById("invTotalPayable").innerHTML = formatAdvance(totalPayable);
   document.getElementById("invTotalPayable").dataset.payable = totalPayable;
-  
+
   const todayStr = formatDate(new Date());
   document.getElementById("invPatientName").innerText = `${patient.name} (${patient.patient_id})`;
   document.getElementById("invDate").innerText = todayStr;
   document.getElementById("invPaidByLabel").innerHTML = `PAID BY <span style="color:#2563eb;">${patient.name.toUpperCase()}</span><br>ON <span style="color:#2563eb;">${todayStr}</span>`;
-  
+
   // Calculate total paid TODAY for this patient
   let sumPaidToday = 0;
   allPatientRecords.forEach(p => {
@@ -3228,22 +3470,22 @@ function updatePatientInvoiceUI(patient, patientRecords) {
   document.getElementById("invPaidToday").value = sumPaidToday > 0 ? sumPaidToday : "";
   document.getElementById("ptInvoiceNotes").value = "";
   document.getElementById("invPaidToday").dataset.savedSum = sumPaidToday;
-  
+
   document.getElementById("btnSavePatientPayment").disabled = false;
-  
+
   window.updatePatientFinalBalance();
 }
 
-window.updatePatientFinalBalance = function() {
+window.updatePatientFinalBalance = function () {
   const payableSpan = document.getElementById("invTotalPayable");
   const payable = parseFloat(payableSpan.dataset.payable) || 0;
   const paidToday = parseFloat(document.getElementById("invPaidToday").value) || 0;
-  
+
   const finalBalance = payable - paidToday;
   document.getElementById("invFinalBalance").innerHTML = formatAdvance(finalBalance);
 };
 
-window.resetPatientTallyFilters = function() {
+window.resetPatientTallyFilters = function () {
   document.getElementById('ptFilterPatient').value = '';
   document.getElementById('ptFilterDoctor').value = '';
   document.getElementById('ptFilterFromDate').value = '';
@@ -3251,7 +3493,7 @@ window.resetPatientTallyFilters = function() {
   renderPatientTally();
 };
 
-window.printPatientStatement = function() {
+window.printPatientStatement = function () {
   const pFilterRaw = document.getElementById("ptFilterPatient").value.trim();
   let pFilterId = pFilterRaw;
   if (pFilterRaw) {
@@ -3262,7 +3504,7 @@ window.printPatientStatement = function() {
   const dFilterName = document.getElementById("ptFilterDoctor").value;
   const fDate = document.getElementById("ptFilterFromDate").value;
   const tDate = document.getElementById("ptFilterToDate").value;
-  
+
   let pName = "All Patients";
   if (pFilterId) {
     // Try exact ID match first
@@ -3280,7 +3522,7 @@ window.printPatientStatement = function() {
   if (!printArea) return;
 
   const tableClone = document.querySelector("#patientsTallyTab .table-container").cloneNode(true);
-  
+
   const headerHtml = `
     <div style="background: linear-gradient(135deg, #0f766e, #059669); padding: 20px; border-radius: 8px 8px 0 0; display: flex; align-items: center; gap: 20px; margin-bottom: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
       <div style="width: 60px; height: 60px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
@@ -3301,7 +3543,7 @@ window.printPatientStatement = function() {
   printArea.innerHTML = headerHtml + `<div class="table-container">${tableClone.innerHTML}</div>`;
 
   document.body.classList.add('printing-custom', 'print-mode-statement');
-  
+
   setTimeout(() => {
     window.print();
     document.body.classList.remove('printing-custom', 'print-mode-statement');
@@ -3309,7 +3551,7 @@ window.printPatientStatement = function() {
   }, 300);
 };
 
-window.savePatientPayment = async function() {
+window.savePatientPayment = async function () {
   const pFilterRaw = document.getElementById("ptFilterPatient").value.trim();
   let pFilterId = pFilterRaw;
   if (pFilterRaw) {
@@ -3318,17 +3560,17 @@ window.savePatientPayment = async function() {
   }
 
   if (!pFilterId) return alert("Please select a patient to save payment.");
-  
+
   const paidInput = document.getElementById("invPaidToday");
   const paidAmount = parseFloat(paidInput.value) || 0;
   const savedSum = parseFloat(paidInput.dataset.savedSum) || 0;
-  
+
   if (paidAmount <= 0) return alert("Please enter a valid amount greater than 0.");
   if (paidAmount === savedSum && savedSum > 0) {
     alert("This amount is already the total saved for today! To add a NEW payment, please erase it and enter the new payment amount.");
     return;
   }
-  
+
   let patient = allPatients.find(p => p.patient_id && p.patient_id.toString() === pFilterId);
   // Fallback to name match
   if (!patient) patient = allPatients.find(p => p.name.toLowerCase().includes(pFilterId.toLowerCase()));
@@ -3337,7 +3579,7 @@ window.savePatientPayment = async function() {
   const btn = document.getElementById("btnSavePatientPayment");
   btn.disabled = true;
   btn.innerText = "Saving...";
-  
+
   const notesStr = document.getElementById("ptInvoiceNotes").value.trim() || "";
 
   const patientData = {
@@ -3347,11 +3589,11 @@ window.savePatientPayment = async function() {
     name: patient.name,
     phone: patient.phone || "",
     address: patient.address || "",
-    visit: "Payment",
+    visit: notesStr ? "Pharmacy / Payment (" + notesStr + ")" : "Pharmacy / Payment",
     fee: 0,
     paid: 0,
     balance: 0,
-    status: "Pending",
+    status: notesStr ? "Pharmacy / Payment (" + notesStr + ")" : "Pharmacy / Payment",
     notes: notesStr,
     duration: "",
     action: "add",
@@ -3395,25 +3637,25 @@ window.savePatientPayment = async function() {
   }
 };
 
-window.printPatientInvoice = function() {
+window.printPatientInvoice = function () {
   const printArea = document.getElementById('printArea');
   if (!printArea) return;
 
   const invoiceCard = document.getElementById("patientInvoiceCard");
   if (!invoiceCard) return;
-  
+
   const clone = invoiceCard.cloneNode(true);
-  
+
   const ptInvoiceNotesDiv = clone.querySelector('#ptInvoiceNotes');
   if (ptInvoiceNotesDiv && ptInvoiceNotesDiv.parentElement) ptInvoiceNotesDiv.parentElement.remove();
-  
+
   // Replace inputs with divs
   const inputs = clone.querySelectorAll('input');
   inputs.forEach(input => {
     const val = input.value;
     input.outerHTML = `<div style="font-family: monospace; font-size: 14px; font-weight: 700; color: #0f766e;">${val}</div>`;
   });
-  
+
   // Remove the Save button from print
   const btn = clone.querySelector('#btnSavePatientPayment');
   if (btn) btn.remove();
@@ -3421,7 +3663,7 @@ window.printPatientInvoice = function() {
   printArea.innerHTML = `<div class="receipt-wrapper" style="width: 350px; margin: 0 auto;">${clone.innerHTML}</div>`;
 
   document.body.classList.add('printing-custom', 'print-mode-receipt');
-  
+
   setTimeout(() => {
     window.print();
     document.body.classList.remove('printing-custom', 'print-mode-receipt');
@@ -3451,7 +3693,7 @@ async function deleteSelectedRows() {
     alert("Please select at least one row to delete.");
     return;
   }
-  
+
   const isConfirmed = await customConfirmAsync(`Are you sure you want to delete ${checkboxes.length} selected record(s)?`);
   if (!isConfirmed) return;
 
@@ -3477,10 +3719,10 @@ async function deleteSelectedRows() {
   });
 }
 
-window.renderBalanceSheet = function() {
+window.renderBalanceSheet = function () {
   const tbody = document.getElementById("ptBalanceSheetTableBody");
   const emptyMsg = document.getElementById("ptBalanceSheetEmpty");
-  
+
   if (!tbody || !emptyMsg) return;
 
   const patientMap = new Map();
@@ -3488,7 +3730,7 @@ window.renderBalanceSheet = function() {
   allPatients.forEach(p => {
     if (!p.patient_id) return;
     const id = String(p.patient_id);
-    
+
     const fee = parseFloat(p.fee) || 0;
     const paid = parseFloat(p.paid) || 0;
     const medFee = parseFloat(p.medicine_fee) || 0;
@@ -3506,7 +3748,7 @@ window.renderBalanceSheet = function() {
         totalMedPaid: 0
       });
     }
-    
+
     const record = patientMap.get(id);
     record.totalFee += fee;
     record.totalPaid += paid;
@@ -3547,18 +3789,18 @@ window.renderBalanceSheet = function() {
   tbody.innerHTML = html;
 }
 
-window.loadInvoiceFromBalance = function(patientId, patientName) {
+window.loadInvoiceFromBalance = function (patientId, patientName) {
   // Set the search filter and trigger the patient tally render to update the receipt
   document.getElementById("ptFilterPatient").value = `${patientName} (#${patientId})`;
   renderPatientTally();
 }
 
-window.showPendingBalancePopup = function(filterDate) {
+window.showPendingBalancePopup = function (filterDate) {
   const modal = document.getElementById("pendingBalanceModal");
   const tbody = document.getElementById("popupPendingTableBody");
   const emptyMsg = document.getElementById("popupPendingEmpty");
   const modalContent = document.getElementById("pendingBalanceModalContent");
-  
+
   if (!modal || !tbody || !emptyMsg) return;
 
   if (filterDate === undefined) {
@@ -3570,7 +3812,7 @@ window.showPendingBalancePopup = function(filterDate) {
     if (filterDate === 'ALL') dateInput.value = "";
     else dateInput.value = filterDate;
   }
-  
+
   const dateLabel = document.getElementById("popupDateLabel");
   if (dateLabel) {
     if (filterDate === 'ALL') dateLabel.innerText = "Overall";
@@ -3584,7 +3826,7 @@ window.showPendingBalancePopup = function(filterDate) {
   transactionsToProcess.forEach(p => {
     if (!p.patient_id) return;
     const id = String(p.patient_id);
-    
+
     const fee = parseFloat(p.fee) || 0;
     const paid = parseFloat(p.paid) || 0;
     const medFee = parseFloat(p.medicine_fee) || 0;
@@ -3602,7 +3844,7 @@ window.showPendingBalancePopup = function(filterDate) {
         totalMedPaid: 0
       });
     }
-    
+
     const record = patientMap.get(id);
     record.totalFee += fee;
     record.totalPaid += paid;
@@ -3660,7 +3902,7 @@ window.showPendingBalancePopup = function(filterDate) {
   }, 10);
 }
 
-window.closePendingBalancePopup = function() {
+window.closePendingBalancePopup = function () {
   const modal = document.getElementById("pendingBalanceModal");
   const modalContent = document.getElementById("pendingBalanceModalContent");
   if (!modal) return;
@@ -3671,11 +3913,11 @@ window.closePendingBalancePopup = function() {
   }, 300);
 }
 
-window.loadInvoiceAndClosePopup = function(patientId, patientName) {
+window.loadInvoiceAndClosePopup = function (patientId, patientName) {
   closePendingBalancePopup();
   // Make sure we switch to the Patients Tally section to see the invoice
   const ptTabBtn = Array.from(document.querySelectorAll('.tabs-nav .tab-btn')).find(btn => btn.innerText.includes("Patients Tally"));
-  if(ptTabBtn) switchTab('patientsTallyTab', ptTabBtn);
+  if (ptTabBtn) switchTab('patientsTallyTab', ptTabBtn);
   loadInvoiceFromBalance(patientId, patientName);
 }
 
@@ -3701,7 +3943,7 @@ document.addEventListener("DOMContentLoaded", updateOnlineStatus);
 // EXCEL BACKUP EXPORT FUNCTION
 // Exports the Day-wise Patient Record table to Excel
 // ====================================================
-window.exportTableToExcel = function() {
+window.exportTableToExcel = function () {
   const dateFilterEl = document.getElementById("obsDateFilter");
   const obsDoctorFilterEl = document.getElementById("obsDoctorFilter");
 
