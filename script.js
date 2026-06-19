@@ -2849,32 +2849,17 @@ window.recalculateHistoryColors = function () {
     }
 
     if (window.savedDates.has(d)) {
+        // Saved in DB — full green
         row.style.background = `linear-gradient(to right, #dcfce7 100%, #ffffff 100%)`;
     } 
     else if (window.uiChecked.has(d)) {
+        // User manually checked in UI — full green
         row.style.background = `linear-gradient(to right, #dcfce7 100%, #ffffff 100%)`;
         typedPool -= data.pastRemaining; 
     } 
     else {
-        let currentTotalPaid = data.pastPaid || 0;
-        if (typedPool > 0) {
-            let reqRemaining = data.totalAmount - currentTotalPaid;
-            if (typedPool >= reqRemaining) {
-                currentTotalPaid += reqRemaining;
-                typedPool -= reqRemaining;
-            } else {
-                currentTotalPaid += typedPool;
-                typedPool = 0;
-            }
-        }
-
-        if (currentTotalPaid > 0) {
-            let req = data.totalAmount;
-            const pct = (currentTotalPaid / req) * 100;
-            row.style.background = `linear-gradient(to right, #dcfce7 ${pct}%, #ffffff ${pct}%)`;
-        } else {
-            row.style.background = "#ffffff";
-        }
+        // Not checked — always white, no shading
+        row.style.background = "#ffffff";
     }
   });
 };
