@@ -2370,6 +2370,65 @@ function editPatient(patientId, checkupId, visit) {
   document.getElementById("formMode").value = "update";
   document.getElementById("btnText").innerText = "Update Entry";
 
+  // 1. Clear datasets to prevent garbage restoration from previous interactions
+  const visitInput = document.getElementById("visit");
+  const feeInput = document.getElementById("fee");
+  const tokenNoInput = document.getElementById("tokenNo");
+  const doctorSelect = document.getElementById("doctor");
+  const checkupIdInput = document.getElementById("displayCheckupId");
+  const validUptoInput = document.getElementById("validUpto");
+  const paidInput = document.getElementById("paid");
+
+  if (visitInput) delete visitInput.dataset.originalVisit;
+  if (feeInput) delete feeInput.dataset.originalFee;
+  if (tokenNoInput) delete tokenNoInput.dataset.originalToken;
+  if (doctorSelect) delete doctorSelect.dataset.originalDoctor;
+  if (checkupIdInput) delete checkupIdInput.dataset.originalCheckup;
+  if (validUptoInput) delete validUptoInput.dataset.originalDate;
+  if (paidInput) delete paidInput.dataset.originalPaid;
+
+  const pStatusClean = String(p.status || "").replace(/\s*\(((Good|Bad)(?::\s*([^)]*?))?)\)$/, "").trim();
+
+  // 2. Trigger handler functions to setup form UI correctly
+  if (pStatusClean.includes("Pharmacy / Payment")) {
+    document.getElementById("paymentOnly").checked = true;
+    handlePaymentOnlyChange();
+    const noteMatch = String(p.status || "").match(/\(([^)]+)\)/);
+    if (noteMatch && document.getElementById("paymentNote")) {
+      document.getElementById("paymentNote").value = noteMatch[1];
+    }
+  } else {
+    document.getElementById("paymentOnly").checked = false;
+    handlePaymentOnlyChange();
+  }
+
+  if (pStatusClean === "Under Observation") {
+    document.getElementById("underObservation").checked = true;
+    document.getElementById("leftClinic").checked = false;
+    if (document.getElementById("leftWithoutCheckup")) document.getElementById("leftWithoutCheckup").checked = false;
+  } else if (pStatusClean === "Left Clinic") {
+    document.getElementById("underObservation").checked = false;
+    document.getElementById("leftClinic").checked = true;
+    if (document.getElementById("leftWithoutCheckup")) document.getElementById("leftWithoutCheckup").checked = false;
+  } else if (pStatusClean === "Left Without Checkup") {
+    document.getElementById("underObservation").checked = false;
+    document.getElementById("leftClinic").checked = false;
+    if (document.getElementById("leftWithoutCheckup")) document.getElementById("leftWithoutCheckup").checked = true;
+  } else {
+    document.getElementById("underObservation").checked = false;
+    document.getElementById("leftClinic").checked = false;
+    if (document.getElementById("leftWithoutCheckup")) document.getElementById("leftWithoutCheckup").checked = false;
+  }
+
+  if (p.visit.toLowerCase().includes("extra visit")) {
+    document.getElementById("isExtraVisit").checked = true;
+  } else {
+    document.getElementById("isExtraVisit").checked = false;
+  }
+
+  handleObservationChange();
+
+  // 3. NOW assign actual values from `p`
   document.getElementById("activePatientId").value = p.patient_id;
   document.getElementById("activeCheckupId").value = p.checkup_id;
   document.getElementById("displayCheckupId").value = p.checkup_id;
@@ -2382,6 +2441,14 @@ function editPatient(patientId, checkupId, visit) {
   document.getElementById("visit").value = p.visit;
   document.getElementById("fee").value = p.fee;
   document.getElementById("paid").value = p.paid || ""; // Set paid amount
+
+  if (p.visit.toLowerCase().includes("extra visit")) {
+    document.getElementById("displayCheckupId").value = p.checkup_id + " ✚";
+    // Disable paid field for extra visits (fee refunded)
+    document.getElementById("paid").disabled = true;
+  } else {
+    document.getElementById("paid").disabled = false; // Make sure paid is enabled
+  }
 
   // Calculate previous balance (excluding this specific record)
   const prevRecords = allPatients.filter(r => String(r.patient_id) === String(patientId) && r.row_index !== p.row_index);
@@ -2437,49 +2504,6 @@ function editPatient(patientId, checkupId, visit) {
 
   document.getElementById("paymentByShehjar").value = p.payment_by_shehjar || "";
 
-  if (p.visit.toLowerCase().includes("extra visit")) {
-    document.getElementById("isExtraVisit").checked = true;
-    document.getElementById("displayCheckupId").value = p.checkup_id + " ✚";
-    // Disable paid field for extra visits (fee refunded)
-    document.getElementById("paid").disabled = true;
-    document.getElementById("paid").value = "";
-  } else {
-    document.getElementById("isExtraVisit").checked = false;
-    document.getElementById("paid").disabled = false; // Make sure paid is enabled
-  }
-
-  const pStatusClean = String(p.status || "").replace(/\s*\(((Good|Bad)(?::\s*([^)]*?))?)\)$/, "").trim();
-
-  if (pStatusClean.includes("Pharmacy / Payment")) {
-    document.getElementById("paymentOnly").checked = true;
-    handlePaymentOnlyChange();
-    const noteMatch = String(p.status || "").match(/\(([^)]+)\)/);
-    if (noteMatch && document.getElementById("paymentNote")) {
-      document.getElementById("paymentNote").value = noteMatch[1];
-    }
-  } else {
-    document.getElementById("paymentOnly").checked = false;
-    handlePaymentOnlyChange();
-  }
-
-  if (pStatusClean === "Under Observation") {
-    document.getElementById("underObservation").checked = true;
-    document.getElementById("leftClinic").checked = false;
-    if (document.getElementById("leftWithoutCheckup")) document.getElementById("leftWithoutCheckup").checked = false;
-  } else if (pStatusClean === "Left Clinic") {
-    document.getElementById("underObservation").checked = false;
-    document.getElementById("leftClinic").checked = true;
-    if (document.getElementById("leftWithoutCheckup")) document.getElementById("leftWithoutCheckup").checked = false;
-  } else if (pStatusClean === "Left Without Checkup") {
-    document.getElementById("underObservation").checked = false;
-    document.getElementById("leftClinic").checked = false;
-    if (document.getElementById("leftWithoutCheckup")) document.getElementById("leftWithoutCheckup").checked = true;
-  } else {
-    document.getElementById("underObservation").checked = false;
-    document.getElementById("leftClinic").checked = false;
-    if (document.getElementById("leftWithoutCheckup")) document.getElementById("leftWithoutCheckup").checked = false;
-  }
-
   if (document.getElementById("patientBehavior")) {
     // Extract behavior from status string e.g. "Left Clinic (Bad: Rude)" → "Bad"
     const statusStr = String(p.status || "");
@@ -2506,7 +2530,7 @@ function editPatient(patientId, checkupId, visit) {
       updateBehaviorDropdownColor();
     }
   }
-  handleObservationChange();
+  
   calculateBalance();
 
   // Scroll to top
