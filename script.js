@@ -1557,6 +1557,7 @@ async function addPatient() {
 
   // Get exact row_index for foolproof update
   let rowIndexToUpdate = "";
+  let finalDate = formatDate(new Date()); // Default to today for new records
   if (formMode === "update") {
     const idx = allPatients.findIndex(p =>
       String(p.patient_id).trim() === String(finalPatientId).trim() &&
@@ -1567,6 +1568,8 @@ async function addPatient() {
       rowIndexToUpdate = allPatients[idx].row_index;
       // Preserve existing token number if available
       if (!finalTokenNo) finalTokenNo = allPatients[idx].token_no || "";
+      // Preserve existing date to prevent moving past records to today
+      if (allPatients[idx].date) finalDate = allPatients[idx].date;
     }
   }
 
@@ -1588,7 +1591,7 @@ async function addPatient() {
   const patientData = {
     patient_id: finalPatientId,
     checkup_id: finalCheckupId,
-    date: formatDate(new Date()),
+    date: finalDate,
     name: name,
     phone: document.getElementById("phone").value,
     address: document.getElementById("address").value,
